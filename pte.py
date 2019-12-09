@@ -20,7 +20,7 @@ num_colors = 16
 column_size = 2.8 # This number is about 20 pixels, same as the default height
 cell_fill_type = 'solid'
 legend_buffer = 1
-use_dmc = False
+use_dmc = True
 
 
 # TODO check out openpyxl.utils.cell.get_column_letter(idx)
@@ -56,9 +56,10 @@ def main(argv):
 
 	# Get colors from image
 	image = reduce_color_palette(image, num_colors)
-	colors = get_colors(image)
+	colors, color_map = get_colors(image)
+	print(color_map[0])
 	if use_dmc:
-		colors = convert_colors_to_dmc(colors)
+		colors = convert_colors_to_dmc(colors, color_map)
 
 	# Create worksheet
 	wb = Workbook()
@@ -118,7 +119,8 @@ def get_image_name():
 
 
 def get_output_directory():
-	#TODO
+	#TODO 
+	#TODO make directory if it doesn't exist
 	return "out\\"
 
 
@@ -140,15 +142,31 @@ def read_image(file_name):
 		return None
 
 
+#############################################
+# IN: PIL image
+# OUT: 2D array with each value containing a rgb tuple
+# OUT: 2D array with each value containing an int representing the color map value
+#############################################
 def get_colors(image):
+	used_colors = []
 	colors = []
+	color_map = []
+
 	for x in range(0, image.size[0]): # Left column to right column
 		column_colors = []
+		column_map = []
 		for y in range(0, image.size[1]): # Top row to bottom row
-			column_colors.append(image.getpixel((x,y)))
-		colors.append(column_colors)
+			pixel_color = image.getpixel((x,y))
+			if(pixel_color not in used_colors):
+				used_colors.append(pixel_color)
+			pixel_map = used_colors.index(pixel_color)
 
-	return colors
+			column_colors.append(pixel_color)
+			column_map.append(pixel_map)
+		colors.append(column_colors)
+		color_map.append(column_map)
+
+	return colors, color_map
 
 
 def rgb_to_hex(color):
@@ -185,6 +203,10 @@ def get_row(y):
 	return str(y + 1)
 
 
+#############################################
+# IN:
+# OUT: 2D array with each value containing a rgb tuple
+#############################################
 def reduce_color_palette(image, num_colors):
 	#TODO use machine learning to do this instead? Current version kind of jank...
 
@@ -193,16 +215,31 @@ def reduce_color_palette(image, num_colors):
 	return pixel_image.convert("RGB") # convert back to RGB mode
 
 
-# Convert RGB colors to closest DMC color
-def convert_colors_to_dmc(colors):
-	"""
-	for c in range(0, len(colors)):
-		colors[c] = find_closest_dmc_color(colors[c])
-	"""
+"""
+def get_pixel_color_map(image):
+	return get_colors(image.convert("P"))
+"""
+
+
+#############################################
+# DESC: Convert RGB colors to closest DMC color
+# IN:
+# OUT: 2D array with each value containing a rgb tuple
+#############################################
+def convert_colors_to_dmc(colors, color_map):
+	#converted_colors = np.full(len(colors), -1, dtype=object)
+	converted_colors = []
+	for i in range(0, len(color_map)):
+		converted_colors.append((-1, -1, -1))
+
 	for x in range(0, len(colors)):
 		print("Converting - " +  str(x) + "/" + str(len(colors)) + " to DMC color palette")
 		for y in range(0, len(colors[x])):
-			colors[x][y] = find_closest_dmc_color(colors[x][y])
+			map_value = color_map[x][y]
+			if(converted_colors[map_value] == (-1, -1, -1)): # converted color not set
+				converted_colors[map_value] = find_closest_dmc_color(colors[x][y])
+				print("Converted " + str(colors[x][y]) + " to " + str(converted_colors[map_value]))
+			colors[x][y] = converted_colors[map_value]
 
 	return colors
 
