@@ -36,10 +36,6 @@ use_dmc = True
 
 # TODO give option for outer buffer in image after trimming
 
-# TODO use dmc color mapping to improve conversion... current method is unacceptable
-
-# TODO symbol mapping to cells over colors
-
 # TODO saturation slider?
 
 # TODO custom symbols/colors
@@ -71,16 +67,20 @@ def main(argv):
 		print("Converting - " +  str(x) + "/" + str(len(colors)) + " to Excel")
 		for y in range(0, len(colors[x])):
 			cell_color = rgb_to_hex(colors[x][y])
+			cell_symbol = color_map[x][y]
+			cell_alignment = styles.Alignment(horizontal='center')
 			cell_fill = styles.PatternFill(fill_type=cell_fill_type, start_color=cell_color, end_color=cell_color)
 			cell_border = styles.Border(left=styles.Side(style='thin'), right=styles.Side(style='thin'), top=styles.Side(style='thin'), bottom=styles.Side(style='thin'))
 			cell_name = get_cell_name(x, y)
+			ws[cell_name].alignment  = cell_alignment
+			ws[cell_name].value = cell_symbol
 			ws[cell_name].fill = cell_fill
 			ws[cell_name].border = cell_border
 		ws.column_dimensions[get_column(x + 1)].width = column_size # Set column size
 	print("Conversion complete")
 
 	# Add legend
-	used_colors = get_used_color_palette(colors)
+	used_colors, used_map = get_used_color_palette(colors, color_map)
 	for c in range(-1, len(used_colors)):
 		if(c == -1):
 			ws[get_cell_name(image.width + legend_buffer, 0)].value = "Color"
@@ -91,8 +91,10 @@ def main(argv):
 			ws[get_cell_name(image.width + legend_buffer + 5, 0)].value = "RGB - B"
 			continue		
 		color_rgb = used_colors[c]
+		color_symbol = used_map[c]
 		color_hex = rgb_to_hex(color_rgb)
 		ws[get_cell_name(image.width + legend_buffer, c + 1)].fill = styles.PatternFill(fill_type=cell_fill_type, start_color=color_hex, end_color=color_hex)
+		ws[get_cell_name(image.width + legend_buffer, c + 1)].value = str(color_symbol)
 		ws[get_cell_name(image.width + legend_buffer + 1, c + 1)].value = get_dmc_name(color_rgb)
 		ws[get_cell_name(image.width + legend_buffer + 2, c + 1)].value = str(color_hex)
 		ws[get_cell_name(image.width + legend_buffer + 3, c + 1)].value = str(color_rgb[0])
@@ -215,12 +217,6 @@ def reduce_color_palette(image, num_colors):
 	return pixel_image.convert("RGB") # convert back to RGB mode
 
 
-"""
-def get_pixel_color_map(image):
-	return get_colors(image.convert("P"))
-"""
-
-
 #############################################
 # DESC: Convert RGB colors to closest DMC color
 # IN:
@@ -280,29 +276,21 @@ def adjust_image_size(image, width, height):
 	return image.resize((width, height))
 
 
-def get_used_color_palette(colors):
-	legend = []
+def get_used_color_palette(colors, color_map):
 	used_colors = []
+	used_map = []
 
 	# Get list of used colors
 	for x in range(0, len(colors)):
 		for y in range(0, len(colors[x])):
 			color = colors[x][y]
+			color_map_value = color_map[x][y]
 			if color not in used_colors:
 				used_colors.append(color)
+				used_map.append(color_map_value)
 
-	return used_colors
+	return used_colors, used_map
 
-	"""
-	# Add used colors to the legend
-	for color in used_colors:
-		cell_color = rgb_to_hex(color)
-		cell_fill = styles.PatternFill(fill_type=cell_fill_type, start_color=cell_color, end_color=cell_color)
-
-		legend.append(cell_fill)
-
-	return legend
-	"""
 
 def get_dmc_name(color_rgb):
 	if use_dmc:
