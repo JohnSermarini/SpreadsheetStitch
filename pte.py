@@ -27,6 +27,7 @@ use_dmc = True
 # from openpyxl.utils import get_column_letter
 
 # TODO add window for importing files and settings
+# PYQT5????
 
 # TODO add pixelizing to decrease image complexity
 
@@ -53,7 +54,6 @@ def main(argv):
 	# Get colors from image
 	image = reduce_color_palette(image, num_colors)
 	colors, color_map = get_colors(image)
-	print(color_map[0])
 	if use_dmc:
 		colors = convert_colors_to_dmc(colors, color_map)
 
@@ -107,6 +107,8 @@ def main(argv):
 	wb.save(output_directory + output_file_name)
 	print(output_file_name + " created")
 
+	image.close()
+
 
 def get_image_directory():
 	#TODO
@@ -116,8 +118,8 @@ def get_image_directory():
 def get_image_name():
 	#TODO get filename from user
 
-	#return "kirby.png"
-	return "fsu.jpg"
+	return "kirby.png"
+	#return "fsu.jpg"
 
 
 def get_output_directory():
@@ -241,7 +243,6 @@ def convert_colors_to_dmc(colors, color_map):
 
 
 def find_closest_dmc_color(color):
-	# dmc_colors
 	closest_distance = 1000000.0
 	closest_index = -1
 
