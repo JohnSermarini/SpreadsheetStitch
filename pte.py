@@ -12,6 +12,8 @@ from openpyxl import Workbook
 from openpyxl import load_workbook
 import string
 import numpy as np
+import tkinter as tk
+from tkinter import filedialog
 
 
 resize_width = 30
@@ -21,12 +23,13 @@ column_size = 2.8 # This number is about 20 pixels, same as the default height
 cell_fill_type = 'solid'
 legend_buffer = 1
 use_dmc = True
+file_path = ""
 
 
 # TODO check out openpyxl.utils.cell.get_column_letter(idx)
 # from openpyxl.utils import get_column_letter
 
-# TODO add window for importing files and settings
+# TODO settings to GUI
 # PYQT5????
 
 # TODO add pixelizing to decrease image complexity
@@ -41,85 +44,24 @@ use_dmc = True
 
 # TODO custom symbols/colors
 
+"""
+TODO error checks:
+Is file open in excel during save.
+is path less than 5 characters
+"""
+
+
 def main(argv):
-	# Get file
-	input_directory = get_image_directory()
-	file_name = get_image_name()
+	# Init
 
-	# Get image from file
-	image = read_image(input_directory + file_name)
-	image = adjust_image_size(image, resize_width, resize_height)
-	image = trim_image(image)
-
-	# Get colors from image
-	image = reduce_color_palette(image, num_colors)
-	colors, color_map = get_colors(image)
-	if use_dmc:
-		colors = convert_colors_to_dmc(colors, color_map)
-
-	# Create worksheet
-	wb = Workbook()
-	ws = wb.create_sheet(file_name, index=0)
-
-	# Fill worksheet
-	#fill_type = 'solid'
-	for x in range(0, len(colors)):
-		print("Converting - " +  str(x) + "/" + str(len(colors)) + " to Excel")
-		for y in range(0, len(colors[x])):
-			cell_color = rgb_to_hex(colors[x][y])
-			cell_symbol = color_map[x][y]
-			cell_alignment = styles.Alignment(horizontal='center')
-			cell_fill = styles.PatternFill(fill_type=cell_fill_type, start_color=cell_color, end_color=cell_color)
-			cell_border = styles.Border(left=styles.Side(style='thin'), right=styles.Side(style='thin'), top=styles.Side(style='thin'), bottom=styles.Side(style='thin'))
-			cell_name = get_cell_name(x, y)
-			ws[cell_name].alignment  = cell_alignment
-			ws[cell_name].value = cell_symbol
-			ws[cell_name].fill = cell_fill
-			ws[cell_name].border = cell_border
-		ws.column_dimensions[get_column(x + 1)].width = column_size # Set column size
-	print("Conversion complete")
-
-	# Add legend
-	used_colors, used_map = get_used_color_palette(colors, color_map)
-	for c in range(-1, len(used_colors)):
-		if(c == -1):
-			ws[get_cell_name(image.width + legend_buffer, 0)].value = "Color"
-			ws[get_cell_name(image.width + legend_buffer + 1, 0)].value = "DMC Name"			
-			ws[get_cell_name(image.width + legend_buffer + 2, 0)].value = "HEX"
-			ws[get_cell_name(image.width + legend_buffer + 3, 0)].value = "RGB - R"
-			ws[get_cell_name(image.width + legend_buffer + 4, 0)].value = "RGB - G"
-			ws[get_cell_name(image.width + legend_buffer + 5, 0)].value = "RGB - B"
-			continue		
-		color_rgb = used_colors[c]
-		color_symbol = used_map[c]
-		color_hex = rgb_to_hex(color_rgb)
-		ws[get_cell_name(image.width + legend_buffer, c + 1)].fill = styles.PatternFill(fill_type=cell_fill_type, start_color=color_hex, end_color=color_hex)
-		ws[get_cell_name(image.width + legend_buffer, c + 1)].value = str(color_symbol)
-		ws[get_cell_name(image.width + legend_buffer + 1, c + 1)].value = get_dmc_name(color_rgb)
-		ws[get_cell_name(image.width + legend_buffer + 2, c + 1)].value = str(color_hex)
-		ws[get_cell_name(image.width + legend_buffer + 3, c + 1)].value = str(color_rgb[0])
-		ws[get_cell_name(image.width + legend_buffer + 4, c + 1)].value = str(color_rgb[1])
-		ws[get_cell_name(image.width + legend_buffer + 5, c + 1)].value = str(color_rgb[2])
-
-	# Save the file
-	output_directory = get_output_directory()
-	output_file_name = get_output_file_name(file_name)
-	wb.save(output_directory + output_file_name)
-	print(output_file_name + " created")
-
-	image.close()
-
-
-def get_image_directory():
-	#TODO
-	return "images\\"
-
-
-def get_image_name():
-	#TODO get filename from user
-
-	return "kirby.png"
-	#return "fsu.jpg"
+	# Configure GUI
+	window = tk.Tk()
+	window.title("CSX")
+	window.geometry("300x300")
+	window.configure(background="white")
+	tk.Button(window, text="Select File", width=100, command=lambda : user_select_file()).pack()
+	tk.Button(window, text="Create", width=100, command=lambda : create()).pack()
+	window.mainloop()
 
 
 def get_output_directory():
@@ -310,6 +252,102 @@ def trim_image(image):
 def get_worksheet_name():
 	# TODO
 	return "TODO"
+
+
+def user_select_file():
+	global file_path
+	file_path = filedialog.askopenfilename() # Returns string
+	print("File:", file_path)
+
+
+def create():
+	global file_path
+	if not file_path_valid(file_path):
+		return
+	file_name = get_file_name_from_path(file_path)
+
+	# Get image from file
+	image = read_image(file_path)
+	image = adjust_image_size(image, resize_width, resize_height)
+	image = trim_image(image)
+
+	# Get colors from image
+	image = reduce_color_palette(image, num_colors)
+	colors, color_map = get_colors(image)
+	if use_dmc:
+		colors = convert_colors_to_dmc(colors, color_map)
+
+	# Create worksheet
+	wb = Workbook()
+	ws = wb.create_sheet(file_name, index=0) # TODO get file name instead of file path
+
+	# Fill worksheet
+	#fill_type = 'solid'
+	for x in range(0, len(colors)):
+		print("Converting - " +  str(x) + "/" + str(len(colors)) + " to Excel")
+		for y in range(0, len(colors[x])):
+			cell_color = rgb_to_hex(colors[x][y])
+			cell_symbol = color_map[x][y]
+			cell_alignment = styles.Alignment(horizontal='center')
+			cell_fill = styles.PatternFill(fill_type=cell_fill_type, start_color=cell_color, end_color=cell_color)
+			cell_border = styles.Border(left=styles.Side(style='thin'), right=styles.Side(style='thin'), top=styles.Side(style='thin'), bottom=styles.Side(style='thin'))
+			cell_name = get_cell_name(x, y)
+			ws[cell_name].alignment  = cell_alignment
+			ws[cell_name].value = cell_symbol
+			ws[cell_name].fill = cell_fill
+			ws[cell_name].border = cell_border
+		ws.column_dimensions[get_column(x + 1)].width = column_size # Set column size
+	print("Conversion complete")
+
+	# Add legend
+	used_colors, used_map = get_used_color_palette(colors, color_map)
+	for c in range(-1, len(used_colors)):
+		if(c == -1):
+			ws[get_cell_name(image.width + legend_buffer, 0)].value = "Color"
+			ws[get_cell_name(image.width + legend_buffer + 1, 0)].value = "DMC Name"			
+			ws[get_cell_name(image.width + legend_buffer + 2, 0)].value = "HEX"
+			ws[get_cell_name(image.width + legend_buffer + 3, 0)].value = "RGB - R"
+			ws[get_cell_name(image.width + legend_buffer + 4, 0)].value = "RGB - G"
+			ws[get_cell_name(image.width + legend_buffer + 5, 0)].value = "RGB - B"
+			continue		
+		color_rgb = used_colors[c]
+		color_symbol = used_map[c]
+		color_hex = rgb_to_hex(color_rgb)
+		ws[get_cell_name(image.width + legend_buffer, c + 1)].fill = styles.PatternFill(fill_type=cell_fill_type, start_color=color_hex, end_color=color_hex)
+		ws[get_cell_name(image.width + legend_buffer, c + 1)].value = str(color_symbol)
+		ws[get_cell_name(image.width + legend_buffer + 1, c + 1)].value = get_dmc_name(color_rgb)
+		ws[get_cell_name(image.width + legend_buffer + 2, c + 1)].value = str(color_hex)
+		ws[get_cell_name(image.width + legend_buffer + 3, c + 1)].value = str(color_rgb[0])
+		ws[get_cell_name(image.width + legend_buffer + 4, c + 1)].value = str(color_rgb[1])
+		ws[get_cell_name(image.width + legend_buffer + 5, c + 1)].value = str(color_rgb[2])
+
+	# Save the file
+	output_directory = get_output_directory()
+	output_file_name = get_output_file_name(file_name)
+	wb.save(output_directory + output_file_name)
+	print(output_file_name + " created")
+
+	image.close()
+
+
+def file_path_valid(file_path):
+	# Check for empty path
+	if(file_path == ""):
+		print("Error: Path file path empty.")
+		return False
+	# Check file type
+	file_extension = file_path[-5:].lower()
+	print(file_extension)
+	if  ".jpg" not in file_extension.lower() and \
+		".png" not in file_extension.lower() and \
+		".jpeg" not in file_extension.lower() :
+		print("Error: File must be type '.png' or '.jpg'")
+		return False
+	return True
+
+
+def get_file_name_from_path(file_path):
+	return file_path.split("/")[-1]
 
 
 if __name__ == "__main__":
