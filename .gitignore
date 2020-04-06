@@ -1,5 +1,6 @@
 # Cross Stitch Folders
 out/*
+in
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
