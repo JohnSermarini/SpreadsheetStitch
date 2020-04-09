@@ -42,6 +42,8 @@ Is file open in excel during save.
 is path less than 5 characters
 Pic has too many colors?????
 check Get_file_name_from_path is only a filename and not a path
+jpeg having two .'s
+add error check for having the dmc color_chart file open
 """
 ################################################################################################
 
@@ -57,11 +59,17 @@ error_box_header = "Error"
 # Program functionality values
 file_path = ""
 
+# GUI values
+label_file_selected = None
+label_progress = None
+
 
 def main(argv):
 	# Init
 	window = tk.Tk()
 	guivar_checkbox_use_dmc = tk.IntVar()
+	global label_file_selected
+	global label_progress
 
 	# Configure GUI
 	window.title("CSX")
@@ -78,9 +86,11 @@ def main(argv):
 	entry_num_colors.pack()
 	checkbox_use_dmc_colors = tk.Checkbutton(text="Use DMC color palette", variable=guivar_checkbox_use_dmc, onvalue=True, offvalue=False)
 	checkbox_use_dmc_colors.pack()
-	button_select_file = tk.Button(window, text="Select File", width=100, command=lambda : user_select_file(label_file_selected))
+	button_select_file = tk.Button(window, text="Select File", width=100, command=lambda : user_select_file())
 	button_select_file.pack()
 	label_file_selected = tk.Label(window, text="No File Selected", fg="red")
+	label_file_selected.pack()
+	label_progress = tk.Label(window, text="")
 	label_file_selected.pack()
 	button_create = tk.Button(window, text="Create", width=100, command=lambda : create(guivar_checkbox_use_dmc.get(), entry_width.get(), entry_height.get(), entry_num_colors.get()))
 	button_create.pack()
@@ -141,7 +151,6 @@ def get_colors(image):
 def rgb_to_hex(color):
 	# Note: Have color[3] for alpha for future expansion.
 	return '%02x%02x%02x' % (color[0], color[1], color[2])
-	#return '000000' # all black
 
 
 def get_cell_name(x, y):
@@ -173,7 +182,7 @@ def get_row(y):
 
 
 #############################################
-# IN:
+# IN: pil image, int of amount of colors
 # OUT: 2D array with each value containing a rgb tuple
 #############################################
 def reduce_color_palette(image, num_colors):
@@ -186,7 +195,7 @@ def reduce_color_palette(image, num_colors):
 
 #############################################
 # DESC: Convert RGB colors to closest DMC color
-# IN:
+# IN: 2D color array, 2D color mapping array, int of amount of colors
 # OUT: 2D array with each value containing a rgb tuple
 #############################################
 def convert_colors_to_dmc(colors, color_map, num_colors):
@@ -199,9 +208,6 @@ def convert_colors_to_dmc(colors, color_map, num_colors):
 		print("Converting - " +  str(x) + "/" + str(len(colors)) + " to DMC color palette")
 		for y in range(0, len(colors[x])):
 			map_value = color_map[x][y]
-			print(map_value)
-			print("Len: " + str(len(converted_colors)))
-			print("Color Map Len: " + str(len(color_map)))
 			if(converted_colors[map_value] == (-1, -1, -1)): # converted color not set
 				converted_colors[map_value] = find_closest_dmc_color(colors[x][y])
 				print("Converted " + str(colors[x][y]) + " to " + str(converted_colors[map_value]))
@@ -280,10 +286,12 @@ def get_worksheet_name():
 	return "TODO"
 
 
-def user_select_file(label_file_selected):
+def user_select_file():
 	global file_path
+	global label_file_selected
+	# Get path
 	file_path = filedialog.askopenfilename() # Returns string
-	# Update label
+	# Update label and console
 	label_file_selected["text"] = get_file_name_from_path(file_path)
 	label_file_selected["fg"] = "green"
 	print("File:", file_path)
@@ -291,6 +299,7 @@ def user_select_file(label_file_selected):
 
 def create(use_dmc, width, height, num_colors):
 	global file_path
+	global label_progress
 
 	# Check inputs for errors
 	if not file_path_valid(file_path):
@@ -305,6 +314,9 @@ def create(use_dmc, width, height, num_colors):
 	width = int(width)
 	height = int(height)
 	num_colors = int(num_colors)
+
+	# Update GUI
+	label_progress["text"] = "Conversion in progress..."
 
 	# Get image from file
 	image = read_image(file_path)
@@ -364,12 +376,31 @@ def create(use_dmc, width, height, num_colors):
 	# Save the file
 	output_directory = get_output_directory()
 	output_file_name = get_output_file_name(file_name)
-	wb.save(output_directory + "\\" + output_file_name)
-	print(output_file_name + " created")
-	messagebox.showinfo("Success", output_file_name + " created in folder '" + output_directory + "'")
-
+	output_file_path = output_directory + "\\" + output_file_name
+	save_success = save_wb(wb, output_file_path)
+	if save_success:
+		print(output_file_name + " created")
+		messagebox.showinfo("Success", output_file_name + " created in folder '" + output_directory + "'")
+	else:
+		print(output_file_name + " save failed")
+		messagebox.showinfo(error_box_header, "Error: Save failed. Make sure file '" + get_file_name_from_path(output_file_name) + "' is not already open on computer.")
+	label_progress["text"] = ""
+	
 	# Close
 	image.close()
+
+
+#############################################
+# DESC: Save the workbook as an excel file
+# IN: workbook, file path
+# OUT: boolean indicating success
+#############################################
+def save_wb(wb, output_file_path):
+	try:
+		wb.save(output_file_path)
+		return True
+	except Exception as e:
+		return False
 
 
 def file_path_valid(file_path):
