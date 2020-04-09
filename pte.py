@@ -14,13 +14,10 @@ import string
 import numpy as np
 import tkinter as tk
 from tkinter import filedialog
+from tkinter import messagebox
 
 
-column_size = 2.8 # This number is about 20 pixels, same as the default height
-cell_fill_type = 'solid'
-legend_buffer = 1
-
-
+################################################################################################
 # TODO check out openpyxl.utils.cell.get_column_letter(idx)
 # from openpyxl.utils import get_column_letter
 
@@ -44,7 +41,21 @@ TODO error checks:
 Is file open in excel during save.
 is path less than 5 characters
 Pic has too many colors?????
+check Get_file_name_from_path is only a filename and not a path
 """
+################################################################################################
+
+
+# CSV formatting values
+column_size = 2.8 # This number is about 20 pixels, same as the default height
+cell_fill_type = 'solid'
+legend_buffer = 1
+
+# Program aesthetics values
+error_box_header = "Error"
+
+# Program functionality values
+file_path = ""
 
 
 def main(argv):
@@ -67,8 +78,10 @@ def main(argv):
 	entry_num_colors.pack()
 	checkbox_use_dmc_colors = tk.Checkbutton(text="Use DMC color palette", variable=guivar_checkbox_use_dmc, onvalue=True, offvalue=False)
 	checkbox_use_dmc_colors.pack()
-	button_select_file = tk.Button(window, text="Select File", width=100, command=lambda : user_select_file())
+	button_select_file = tk.Button(window, text="Select File", width=100, command=lambda : user_select_file(label_file_selected))
 	button_select_file.pack()
+	label_file_selected = tk.Label(window, text="No File Selected", fg="red")
+	label_file_selected.pack()
 	button_create = tk.Button(window, text="Create", width=100, command=lambda : create(guivar_checkbox_use_dmc.get(), entry_width.get(), entry_height.get(), entry_num_colors.get()))
 	button_create.pack()
 	window.mainloop()
@@ -77,7 +90,7 @@ def main(argv):
 def get_output_directory():
 	#TODO 
 	#TODO make directory if it doesn't exist
-	return "out\\"
+	return "out"
 
 
 def get_output_file_name(file_name):
@@ -97,34 +110,6 @@ def read_image(file_name):
 
 		return None
 
-
-"""
-#############################################
-# IN: PIL image
-# OUT: 2D array with each value containing a rgb tuple
-# OUT: 2D array with each value containing an int representing the color map value
-#############################################
-def get_colors(image):
-	used_colors = []
-	colors = []
-	color_map = []
-
-	for x in range(0, image.size[0]): # Left column to right column
-		column_colors = []
-		column_map = []
-		for y in range(0, image.size[1]): # Top row to bottom row
-			pixel_color = image.getpixel((x,y))
-			if(pixel_color not in used_colors):
-				used_colors.append(pixel_color)
-			pixel_map = used_colors.index(pixel_color)
-
-			column_colors.append(pixel_color)
-			column_map.append(pixel_map)
-		colors.append(column_colors)
-		color_map.append(column_map)
-
-	return colors, color_map
-"""
 
 #############################################
 # IN: PIL image
@@ -295,14 +280,16 @@ def get_worksheet_name():
 	return "TODO"
 
 
-def user_select_file():
+def user_select_file(label_file_selected):
 	global file_path
 	file_path = filedialog.askopenfilename() # Returns string
+	# Update label
+	label_file_selected["text"] = get_file_name_from_path(file_path)
+	label_file_selected["fg"] = "green"
 	print("File:", file_path)
 
 
 def create(use_dmc, width, height, num_colors):
-	# Grab file_path
 	global file_path
 
 	# Check inputs for errors
@@ -377,8 +364,9 @@ def create(use_dmc, width, height, num_colors):
 	# Save the file
 	output_directory = get_output_directory()
 	output_file_name = get_output_file_name(file_name)
-	wb.save(output_directory + output_file_name)
+	wb.save(output_directory + "\\" + output_file_name)
 	print(output_file_name + " created")
+	messagebox.showinfo("Success", output_file_name + " created in folder '" + output_directory + "'")
 
 	# Close
 	image.close()
@@ -388,6 +376,7 @@ def file_path_valid(file_path):
 	# Check for empty path
 	if file_path == "":
 		print("Error: Path file path empty.")
+		messagebox.showinfo(error_box_header, "Error: Path file path empty.")
 		return False
 	# Check file type
 	file_extension = file_path[-5:].lower()
@@ -395,6 +384,7 @@ def file_path_valid(file_path):
 		".png" not in file_extension.lower() and \
 		".jpeg" not in file_extension.lower() :
 		print("Error: File must be type '.png' or '.jpg'")
+		messagebox.showinfo(error_box_header, "Error: File must be type '.png' or '.jpg'")
 		return False
 	return True
 
@@ -403,18 +393,22 @@ def dimensions_valid(width, height):
 	# Check if eheight and width are numbers
 	if not width.isnumeric():
 		print("Error: Width contains non-numeric characters.")
+		messagebox.showinfo(error_box_header, "Error: Width contains non-numeric characters.")
 		return False
 	if not height.isnumeric():
 		print("Error: Height contains non-numeric characters.")
+		messagebox.showinfo(error_box_header, "Error: Height contains non-numeric characters.")
 		return False
 	# Check if height in width are within the desired range
 	width = int(width)
 	height = int(height)
 	if width < 1 or width > 99:
 		print("Error: Width '" + str(width) + "' not valid. Must be between 1 and 99.")
+		messagebox.showinfo(error_box_header, "Error: Width '" + str(width) + "' not valid. Must be between 1 and 99.")
 		return False
 	if height < 1 or height > 99:
 		print("Error: Height '" + str(height) + "' not valid. Must be between 1 and 99.")
+		messagebox.showinfo(error_box_header, "Error: Height '" + str(height) + "' not valid. Must be between 1 and 99.")
 		return False
 	return True
 
@@ -422,10 +416,12 @@ def dimensions_valid(width, height):
 def num_colors_valid(num_colors):
 	if not num_colors.isnumeric():
 		print("Error: Number of Colors contains non-numeric characters.")
+		messagebox.showinfo(error_box_header, "Error: Number of Colors contains non-numeric characters.")
 		return False
 	num_colors = int(num_colors)
 	if num_colors < 4 or num_colors > 16:
 		print("Error: Number of Colors '" + str(num_colors) + "' not valid. Must be between 4 and 16.")
+		messagebox.showinfo(error_box_header, "Error: Number of Colors '" + str(num_colors) + "' not valid. Must be between 4 and 16.")
 		return False
 	return True
 
