@@ -15,6 +15,8 @@ import numpy as np
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
+import matplotlib as mpl
+from matplotlib import pyplot as plt
 
 
 ################################################################################################
@@ -61,7 +63,6 @@ file_path = ""
 
 # GUI values
 label_file_selected = None
-label_progress = None
 
 
 def main(argv):
@@ -69,7 +70,6 @@ def main(argv):
 	window = tk.Tk()
 	guivar_checkbox_use_dmc = tk.IntVar()
 	global label_file_selected
-	global label_progress
 
 	# Configure GUI
 	window.title("CSX")
@@ -90,9 +90,10 @@ def main(argv):
 	button_select_file.pack()
 	label_file_selected = tk.Label(window, text="No File Selected", fg="red")
 	label_file_selected.pack()
-	label_progress = tk.Label(window, text="")
 	label_file_selected.pack()
-	button_create = tk.Button(window, text="Create", width=100, command=lambda : create(guivar_checkbox_use_dmc.get(), entry_width.get(), entry_height.get(), entry_num_colors.get()))
+	button_preview = tk.Button(window, text="Preview", width=100, command=lambda : show_preview(guivar_checkbox_use_dmc.get(), entry_width.get(), entry_height.get(), entry_num_colors.get()))
+	button_preview.pack()
+	button_create = tk.Button(window, text="Create", width=100, command=lambda : create_workbook(guivar_checkbox_use_dmc.get(), entry_width.get(), entry_height.get(), entry_num_colors.get()))
 	button_create.pack()
 	window.mainloop()
 
@@ -297,26 +298,22 @@ def user_select_file():
 	print("File:", file_path)
 
 
-def create(use_dmc, width, height, num_colors):
+def create_color_grid(use_dmc, width, height, num_colors):
 	global file_path
-	global label_progress
 
 	# Check inputs for errors
 	if not file_path_valid(file_path):
-		return
+		return None, None
 	if not dimensions_valid(width, height):
-		return
+		return None, None
 	if not num_colors_valid(num_colors):
-		return
+		return None, None
 
 	# Init
 	file_name = get_file_name_from_path(file_path)
 	width = int(width)
 	height = int(height)
 	num_colors = int(num_colors)
-
-	# Update GUI
-	label_progress["text"] = "Conversion in progress..."
 
 	# Get image from file
 	image = read_image(file_path)
@@ -329,10 +326,39 @@ def create(use_dmc, width, height, num_colors):
 	if use_dmc:
 		colors = convert_colors_to_dmc(colors, color_map, num_colors)
 
+	# Close
+	image.close()	
+
+	return colors, color_map
+
+
+def show_preview(use_dmc, width, height, num_colors):
+	# Init
+	colors, color_map = create_color_grid(use_dmc, width, height, num_colors)
+	if colors is None:
+		return
+	# Set preview window details
+	mpl.rcParams['toolbar'] = 'None'
+	plt.figure(num='Preview')
+	plt.axis('off')
+	# Adjust orientation
+	rotated_colors = np.rot90(colors, k=3, axes=(0,1))
+	rotated_colors = np.fliplr(rotated_colors)
+	# Display
+	plt.imshow(rotated_colors, interpolation='none')
+	plt.show()
+
+
+def create_workbook(use_dmc, width, height, num_colors):
+	global file_path
+	# Init
+	file_name = get_file_name_from_path(file_path)
+	colors, color_map = create_color_grid(use_dmc, width, height, num_colors)
+	if colors is None:
+		return
 	# Create worksheet
 	wb = Workbook()
-	ws = wb.create_sheet(file_name, index=0) # TODO get file name instead of file path
-
+	ws = wb.create_sheet(file_name, index=0)
 	# Fill worksheet
 	#fill_type = 'solid'
 	for x in range(0, len(colors)):
@@ -350,29 +376,28 @@ def create(use_dmc, width, height, num_colors):
 			ws[cell_name].border = cell_border
 		ws.column_dimensions[get_column(x + 1)].width = column_size # Set column size
 	print("Conversion complete")
-
 	# Add legend
 	used_colors, used_map = get_used_color_palette(colors, color_map)
+	width = len(colors[0])
 	for c in range(-1, len(used_colors)):
 		if(c == -1):
-			ws[get_cell_name(image.width + legend_buffer, 0)].value = "Color"
-			ws[get_cell_name(image.width + legend_buffer + 1, 0)].value = "DMC Name"			
-			ws[get_cell_name(image.width + legend_buffer + 2, 0)].value = "HEX"
-			ws[get_cell_name(image.width + legend_buffer + 3, 0)].value = "RGB - R"
-			ws[get_cell_name(image.width + legend_buffer + 4, 0)].value = "RGB - G"
-			ws[get_cell_name(image.width + legend_buffer + 5, 0)].value = "RGB - B"
+			ws[get_cell_name(width + legend_buffer, 0)].value = "Color"
+			ws[get_cell_name(width + legend_buffer + 1, 0)].value = "DMC Name"			
+			ws[get_cell_name(width + legend_buffer + 2, 0)].value = "HEX"
+			ws[get_cell_name(width + legend_buffer + 3, 0)].value = "Red Value"
+			ws[get_cell_name(width + legend_buffer + 4, 0)].value = "Green Value"
+			ws[get_cell_name(width + legend_buffer + 5, 0)].value = "Blue Value"
 			continue		
 		color_rgb = used_colors[c]
 		color_symbol = used_map[c]
 		color_hex = rgb_to_hex(color_rgb)
-		ws[get_cell_name(image.width + legend_buffer, c + 1)].fill = styles.PatternFill(fill_type=cell_fill_type, start_color=color_hex, end_color=color_hex)
-		ws[get_cell_name(image.width + legend_buffer, c + 1)].value = str(color_symbol)
-		ws[get_cell_name(image.width + legend_buffer + 1, c + 1)].value = get_dmc_name(use_dmc, color_rgb)
-		ws[get_cell_name(image.width + legend_buffer + 2, c + 1)].value = str(color_hex)
-		ws[get_cell_name(image.width + legend_buffer + 3, c + 1)].value = str(color_rgb[0])
-		ws[get_cell_name(image.width + legend_buffer + 4, c + 1)].value = str(color_rgb[1])
-		ws[get_cell_name(image.width + legend_buffer + 5, c + 1)].value = str(color_rgb[2])
-
+		ws[get_cell_name(width + legend_buffer, c + 1)].fill = styles.PatternFill(fill_type=cell_fill_type, start_color=color_hex, end_color=color_hex)
+		ws[get_cell_name(width + legend_buffer, c + 1)].value = str(color_symbol)
+		ws[get_cell_name(width + legend_buffer + 1, c + 1)].value = get_dmc_name(use_dmc, color_rgb)
+		ws[get_cell_name(width + legend_buffer + 2, c + 1)].value = str(color_hex)
+		ws[get_cell_name(width + legend_buffer + 3, c + 1)].value = str(color_rgb[0])
+		ws[get_cell_name(width + legend_buffer + 4, c + 1)].value = str(color_rgb[1])
+		ws[get_cell_name(width + legend_buffer + 5, c + 1)].value = str(color_rgb[2])
 	# Save the file
 	output_directory = get_output_directory()
 	output_file_name = get_output_file_name(file_name)
@@ -384,10 +409,6 @@ def create(use_dmc, width, height, num_colors):
 	else:
 		print(output_file_name + " save failed")
 		messagebox.showinfo(error_box_header, "Error: Save failed. Make sure file '" + get_file_name_from_path(output_file_name) + "' is not already open on computer.")
-	label_progress["text"] = ""
-	
-	# Close
-	image.close()
 
 
 #############################################
