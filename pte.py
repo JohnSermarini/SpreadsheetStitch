@@ -21,6 +21,11 @@ from matplotlib import pyplot as plt
 
 
 ################################################################################################
+
+# TODO figure out why it doesn't work when its not a square
+
+# TODO Add check to make sure files output folder and color chart are present
+
 # TODO check out openpyxl.utils.cell.get_column_letter(idx)
 # from openpyxl.utils import get_column_letter
 
@@ -194,10 +199,13 @@ def get_font_color(cell_color):
 	g = cell_color[1]
 	b = cell_color[2]
 	luma = 0.299*r + 0.587*g + 0.114*b
-	if luma < 0.1:
-		return "FFFFFFFF" # White
-	else:
+	luma = luma / 255.0 # Account for rgb scale being 0-255 instead of 0-1.0
+	print(cell_color)
+	print(luma)
+	if luma > 0.7: # Cell is very bright
 		return "00000000" # Black
+	else: # Cell is very dark
+		return "FFFFFFFF" # White
 
 
 
@@ -386,8 +394,8 @@ def create_workbook(use_dmc, width, height, num_colors):
 		print("Converting - " +  str(x) + "/" + str(len(colors)) + " to Excel")
 		for y in range(0, len(colors[x])):
 			cell_color = rgb_to_hex(colors[x][y])
-			#font_color = get_font_color(colors[x][y])
-			font_color = "FFFFFFFF" # White
+			font_color = get_font_color(colors[x][y])
+			#font_color = "FFFFFFFF" # White
 			cell_symbol = color_map[x][y]
 			cell_alignment = styles.Alignment(horizontal='center')
 			cell_fill = styles.PatternFill(fill_type=cell_fill_type, start_color=cell_color, end_color=cell_color)
@@ -416,8 +424,11 @@ def create_workbook(use_dmc, width, height, num_colors):
 		color_rgb = used_colors[c]
 		color_symbol = used_map[c]
 		color_hex = rgb_to_hex(color_rgb)
+		font_color = get_font_color(color_rgb)
+		cell_font = styles.Font(color=font_color)
 		ws[get_cell_name(width + legend_buffer, c + 1)].fill = styles.PatternFill(fill_type=cell_fill_type, start_color=color_hex, end_color=color_hex)
 		ws[get_cell_name(width + legend_buffer, c + 1)].value = str(color_symbol)
+		ws[get_cell_name(width + legend_buffer, c + 1)].font = cell_font
 		ws[get_cell_name(width + legend_buffer + 1, c + 1)].value = get_dmc_name(use_dmc, color_rgb)
 		ws[get_cell_name(width + legend_buffer + 2, c + 1)].value = str(color_hex)
 		ws[get_cell_name(width + legend_buffer + 3, c + 1)].value = str(color_rgb[0])
