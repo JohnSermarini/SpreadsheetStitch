@@ -22,8 +22,6 @@ from matplotlib import pyplot as plt
 
 ################################################################################################
 
-# TODO figure out why it doesn't work when its not a square
-
 # TODO Add check to make sure files output folder and color chart are present
 
 # TODO check out openpyxl.utils.cell.get_column_letter(idx)
@@ -200,8 +198,6 @@ def get_font_color(cell_color):
 	b = cell_color[2]
 	luma = 0.299*r + 0.587*g + 0.114*b
 	luma = luma / 255.0 # Account for rgb scale being 0-255 instead of 0-1.0
-	print(cell_color)
-	print(luma)
 	if luma > 0.7: # Cell is very bright
 		return "00000000" # Black
 	else: # Cell is very dark
@@ -411,7 +407,8 @@ def create_workbook(use_dmc, width, height, num_colors):
 	print("Conversion complete")
 	# Add legend
 	used_colors, used_map = get_used_color_palette(colors, color_map)
-	width = len(colors[0])
+	#width = len(colors[0])
+	width = len(colors)
 	for c in range(-1, len(used_colors)):
 		if(c == -1):
 			ws[get_cell_name(width + legend_buffer, 0)].value = "Color"
