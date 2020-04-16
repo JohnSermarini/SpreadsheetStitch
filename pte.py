@@ -5,12 +5,13 @@ Auth: John Sermarini
 """
 
 import sys
-from PIL import Image
 import os
+from PIL import Image
 from openpyxl import styles
 from openpyxl import Workbook
 from openpyxl import load_workbook
-import string
+#import string
+from string import ascii_uppercase
 import numpy as np
 import tkinter as tk
 from tkinter import filedialog
@@ -40,12 +41,7 @@ from matplotlib import pyplot as plt
 
 """
 TODO error checks:
-Is file open in excel during save.
 is path less than 5 characters
-Pic has too many colors?????
-check Get_file_name_from_path is only a filename and not a path
-jpeg having two .'s
-add error check for having the dmc color_chart file open
 """
 ################################################################################################
 
@@ -106,9 +102,11 @@ def get_output_directory():
 
 
 def get_output_file_name(file_name):
-	file_name = file_name[:-4]
-
-	return file_name + ".xlsx"
+	output_name = ""	
+	file_split = file_name.split(".")
+	for i in range(0, len(file_split) - 1):
+		output_name = output_name + file_split[i]
+	return output_name + ".xlsx"
 
 
 def read_image(file_name):
@@ -182,7 +180,8 @@ def get_column(num):
 	chars = []
 	while num > 0:
 		num, d = divmod_excel(num)
-		chars.append(string.ascii_uppercase[d - 1])
+		chars.append(ascii_uppercase[d - 1])
+		#chars.append(string.ascii_uppercase[d - 1])
 	return ''.join(reversed(chars)).upper()
 
 
@@ -220,20 +219,19 @@ def reduce_color_palette(image, num_colors):
 # OUT: 2D array with each value containing a rgb tuple
 #############################################
 def convert_colors_to_dmc(colors, color_map, num_colors):
-	#converted_colors = np.full(len(colors), -1, dtype=object)
+	# Init color replacement array
 	converted_colors = []
 	for i in range(0, num_colors):
 		converted_colors.append((-1, -1, -1))
-
+	# Replace every color with the converted color
 	for x in range(0, len(colors)):
-		print("Converting - " +  str(x) + "/" + str(len(colors)) + " to DMC color palette")
 		for y in range(0, len(colors[x])):
 			map_value = color_map[x][y]
-			if(converted_colors[map_value] == (-1, -1, -1)): # converted color not set
+			# Converted color not set
+			if(converted_colors[map_value] == (-1, -1, -1)):
 				converted_colors[map_value] = find_closest_dmc_color(colors[x][y])
-				print("Converted " + str(colors[x][y]) + " to " + str(converted_colors[map_value]))
+			# Replace color
 			colors[x][y] = converted_colors[map_value]
-
 	return colors
 
 
@@ -256,16 +254,19 @@ def find_closest_dmc_color(color):
 
 
 def get_dmc_colors():
-	#TODO error handling
-	ws = load_workbook('color_chart.xlsx').worksheets[0]
-	dmc_colors = []
-	for row in ws.rows:
-		r = row[2].value
-		g = row[3].value
-		b = row[4].value
-		dmc_colors.append((r, g, b))
+	try:
+		ws = load_workbook('color_chart.xlsx').worksheets[0]
+		dmc_colors = []
+		for row in ws.rows:
+			r = row[2].value
+			g = row[3].value
+			b = row[4].value
+			dmc_colors.append((r, g, b))
+		return dmc_colors
+	except Exception as e:
+		tk.messagebox.showinfo(error_box_header, "Error: DMC color chart loading failed. Make sure 'color_chart.xlsx' is present and not open.")
+		return None
 
-	return dmc_colors
 
 
 def adjust_image_size(image, width, height):
@@ -429,10 +430,10 @@ def create_workbook(use_dmc, width, height, num_colors):
 	save_success = save_wb(wb, output_file_path)
 	if save_success:
 		print(output_file_name + " created")
-		messagebox.showinfo("Success", output_file_name + " created in folder '" + output_directory + "'")
+		tk.messagebox.showinfo("Success", output_file_name + " created in folder '" + output_directory + "'")
 	else:
 		print(output_file_name + " save failed")
-		messagebox.showinfo(error_box_header, "Error: Save failed. Make sure file '" + get_file_name_from_path(output_file_name) + "' is not already open on computer.")
+		tk.messagebox.showinfo(error_box_header, "Error: Save failed. Make sure file '" + get_file_name_from_path(output_file_name) + "' is not already open on computer.")
 
 
 #############################################
