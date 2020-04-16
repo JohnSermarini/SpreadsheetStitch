@@ -190,6 +190,18 @@ def get_row(y):
 	return str(y + 1)
 
 
+def get_font_color(cell_color):
+	r = cell_color[0]
+	g = cell_color[1]
+	b = cell_color[2]
+	luma = 0.299*r + 0.587*g + 0.114*b
+	if luma < 0.1:
+		return "FFFFFFFF" # White
+	else:
+		return "00000000" # Black
+
+
+
 #############################################
 # IN: pil image, int of amount of colors
 # OUT: 2D array with each value containing a rgb tuple
@@ -373,15 +385,19 @@ def create_workbook(use_dmc, width, height, num_colors):
 		print("Converting - " +  str(x) + "/" + str(len(colors)) + " to Excel")
 		for y in range(0, len(colors[x])):
 			cell_color = rgb_to_hex(colors[x][y])
+			#font_color = get_font_color(colors[x][y])
+			font_color = "FFFFFFFF" # White
 			cell_symbol = color_map[x][y]
 			cell_alignment = styles.Alignment(horizontal='center')
 			cell_fill = styles.PatternFill(fill_type=cell_fill_type, start_color=cell_color, end_color=cell_color)
 			cell_border = styles.Border(left=styles.Side(style='thin'), right=styles.Side(style='thin'), top=styles.Side(style='thin'), bottom=styles.Side(style='thin'))
+			cell_font = styles.Font(name='Calibri', bold=False, italic=False, color=font_color)
 			cell_name = get_cell_name(x, y)
 			ws[cell_name].alignment  = cell_alignment
 			ws[cell_name].value = cell_symbol
 			ws[cell_name].fill = cell_fill
 			ws[cell_name].border = cell_border
+			ws[cell_name].font = cell_font
 		ws.column_dimensions[get_column(x + 1)].width = column_size # Set column size
 	print("Conversion complete")
 	# Add legend
