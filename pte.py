@@ -18,7 +18,9 @@ from tkinter import filedialog
 from tkinter import messagebox
 import matplotlib as mpl
 from matplotlib import pyplot as plt
-
+from matplotlib.widgets import Slider as pltSlider
+from matplotlib.widgets import Button as pltButton
+from copy import deepcopy
 
 ################################################################################################
 
@@ -41,6 +43,10 @@ from matplotlib import pyplot as plt
 # TODO saturation slider?
 
 # TODO custom symbols/colors
+
+# TODO color brightness and contrast sliders
+
+# TODO fix memory leak on plt slider updates
 
 """
 TODO error checks:
@@ -81,7 +87,7 @@ def main(argv):
 	tk.Label(window, text="Height [1 - 99]:").pack()
 	entry_height = tk.Entry(window, width=300)
 	entry_height.pack()
-	tk.Label(window, text="Number of Colors [4 - 16]:").pack()
+	tk.Label(window, text="Number of Colors [2 - 16]:").pack()
 	entry_num_colors = tk.Entry(window, width=300)
 	entry_num_colors.pack()
 	checkbox_use_dmc_colors = tk.Checkbutton(text="Use DMC color palette", variable=guivar_checkbox_use_dmc, onvalue=True, offvalue=False)
@@ -357,6 +363,23 @@ def create_color_grid(use_dmc, width, height, num_colors):
 	return colors, color_map
 
 
+'''#########################
+		'Preview' GUI
+ ---------------------------
+|							|
+|							|
+|		Display Section		|
+|			0.66%			|
+|							|
+|							|
+|---------------------------|
+|		Slider Section		|
+|			0.33%			|
+ ---------------------------
+'''#########################
+
+
+# Slider tutorial https://riptutorial.com/matplotlib/example/23577/interactive-controls-with-matplotlib-widgets
 def show_preview(use_dmc, width, height, num_colors):
 	# Init
 	colors, color_map = create_color_grid(use_dmc, width, height, num_colors)
@@ -364,14 +387,84 @@ def show_preview(use_dmc, width, height, num_colors):
 		return
 	# Set preview window details
 	mpl.rcParams['toolbar'] = 'None'
-	plt.figure(num='Preview')
-	plt.axis('off')
+	fig = plt.figure(num='Preview')
+	# Image
+	ax_image = fig.add_axes([0, 0.33, 1.0, 0.66]) # add_axes([left, bottom, width, height])
+	ax_image.imshow(get_preview_image_from_colors(colors), interpolation='none')
+	ax_image.set_axis_off()
+	# Add sliders
+	sliders = []
+	slider_width = 0.5
+	slider_height = 0.05
+	slider_left_offset = (1.0 - slider_width) / 2.0
+	slider_vertical_buffer = 0.025
+	# Brightness
+	slider_vertical_offset = slider_vertical_buffer + slider_height + slider_vertical_buffer
+	ax_slider = fig.add_axes([slider_left_offset, slider_vertical_offset, slider_width, slider_height]) # add_axes([left, bottom, width, height])
+	slider_brightness = pltSlider(ax_slider, 'Brightness', 0, 2.0, valinit=1.0, valstep=0.01)
+	sliders.append(slider_brightness)
+	# Contrast
+	slider_vertical_offset = slider_vertical_offset + slider_height + slider_vertical_buffer
+	ax_contrast = fig.add_axes([slider_left_offset, slider_vertical_offset, slider_width, slider_height]) # add_axes([left, bottom, width, height])
+	slider_contrast = pltSlider(ax_contrast, 'Contrast', 0, 1.0, valinit=0.5, valstep=0.01)
+	sliders.append(slider_contrast)
+	# Saturation
+	slider_vertical_offset = slider_vertical_offset + slider_height + slider_vertical_buffer
+	ax_saturation = fig.add_axes([slider_left_offset, slider_vertical_offset, slider_width, slider_height]) # add_axes([left, bottom, width, height])
+	slider_saturation = pltSlider(ax_saturation, 'Saturation', 0, 1.0, valinit=0.5, valstep=0.01)
+	sliders.append(slider_saturation)
+	# Assign on changed update to sliders
+	def update(val):
+		# Reset image
+		ax_image.clear()
+		ax_image.set_axis_off()
+		# Adjust image using slider values
+		new_colors = deepcopy(colors)
+		new_colors = adjust_brightness(new_colors, slider_brightness.val)
+		new_colors = adjust_contrast(new_colors, slider_contrast.val)
+		new_colors = adjust_saturation(new_colors, slider_saturation.val)
+		# Update image
+		ax_image.imshow(get_preview_image_from_colors(new_colors), interpolation='none')
+	for slider in sliders:
+		slider.on_changed(update)
+	# Reset Button
+	def reset_sliders(event):
+		for slider in sliders:
+			slider.reset()
+	ax_reset = fig.add_axes([0.375, slider_vertical_buffer, 0.25, slider_height])
+	reset_button = pltButton(ax_reset, "Reset", hovercolor="0.75")
+	reset_button.on_clicked(reset_sliders)
+	# Show
+	plt.show()
+
+
+def get_preview_image_from_colors(colors):
 	# Adjust orientation
 	rotated_colors = np.rot90(colors, k=3, axes=(0,1))
 	rotated_colors = np.fliplr(rotated_colors)
-	# Display
-	plt.imshow(rotated_colors, interpolation='none')
-	plt.show()
+	return rotated_colors
+
+
+def adjust_brightness(colors, brightness):
+	new_colors = []
+	for x in range(0, len(colors)):
+		new_colors.append(deepcopy(colors[x]))
+		for y in range(0, len(colors[x])):
+			r = min(255, int(colors[x][y][0] * brightness))
+			g = min(255, int(colors[x][y][1] * brightness))
+			b = min(255, int(colors[x][y][2] * brightness))
+			new_colors[x][y] = (r, g, b)
+	return new_colors
+
+
+def adjust_contrast(colors, contrast):
+	print("TODO contrast update")
+	return colors
+
+
+def adjust_saturation(colors, saturation):
+	print("TODO contrast saturation")
+	return colors
 
 
 def create_workbook(use_dmc, width, height, num_colors):
@@ -504,9 +597,9 @@ def num_colors_valid(num_colors):
 		messagebox.showinfo(error_box_header, "Error: Number of Colors contains non-numeric characters.")
 		return False
 	num_colors = int(num_colors)
-	if num_colors < 4 or num_colors > 16:
-		print("Error: Number of Colors '" + str(num_colors) + "' not valid. Must be between 4 and 16.")
-		messagebox.showinfo(error_box_header, "Error: Number of Colors '" + str(num_colors) + "' not valid. Must be between 4 and 16.")
+	if num_colors < 2 or num_colors > 16:
+		print("Error: Number of Colors '" + str(num_colors) + "' not valid. Must be between 2 and 16.")
+		messagebox.showinfo(error_box_header, "Error: Number of Colors '" + str(num_colors) + "' not valid. Must be between 2 and 16.")
 		return False
 	return True
 
