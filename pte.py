@@ -10,7 +10,6 @@ from PIL import Image
 from openpyxl import styles
 from openpyxl import Workbook
 from openpyxl import load_workbook
-#import string
 from string import ascii_uppercase
 import numpy as np
 import tkinter as tk
@@ -21,6 +20,7 @@ from matplotlib import pyplot as plt
 from matplotlib.widgets import Slider as pltSlider
 from matplotlib.widgets import Button as pltButton
 from copy import deepcopy
+from colorsys import rgb_to_hsv, hsv_to_rgb
 
 ################################################################################################
 
@@ -40,13 +40,9 @@ from copy import deepcopy
 
 # TODO give option for outer buffer in image after trimming
 
-# TODO saturation slider?
-
 # TODO custom symbols/colors
 
-# TODO color brightness and contrast sliders
-
-# TODO fix memory leak on plt slider updates
+# TODO sliders affect colors outside of preview
 
 """
 TODO error checks:
@@ -411,7 +407,7 @@ def show_preview(use_dmc, width, height, num_colors):
 	# Saturation
 	slider_vertical_offset = slider_vertical_offset + slider_height + slider_vertical_buffer
 	ax_saturation = fig.add_axes([slider_left_offset, slider_vertical_offset, slider_width, slider_height]) # add_axes([left, bottom, width, height])
-	slider_saturation = pltSlider(ax_saturation, 'Saturation', 0, 1.0, valinit=0.5, valstep=0.01)
+	slider_saturation = pltSlider(ax_saturation, 'Saturation', 0, 1.0, valinit=1.0, valstep=0.01)
 	sliders.append(slider_saturation)
 	# Assign on changed update to sliders
 	def update(val):
@@ -457,14 +453,35 @@ def adjust_brightness(colors, brightness):
 	return new_colors
 
 
+# Tutorial: https://www.dfstudios.co.uk/articles/programming/image-programming-algorithms/image-processing-algorithms-part-5-contrast-adjustment/
 def adjust_contrast(colors, contrast):
-	print("TODO contrast update")
-	return colors
+	new_colors = []
+	contrast = int(-128.0 + (256.0 * contrast)) # 0 = -128, 0.5 = 0, 1.0 = +128
+	f = (259 * (contrast + 255)) / (255 * (259 - contrast))
+	for x in range(0, len(colors)):
+		new_colors.append(deepcopy(colors[x]))
+		for y in range(0, len(colors[x])):
+			r = max(0, min(255, f * (int(colors[x][y][0]) - 128) + 128))
+			g = max(0, min(255, f * (int(colors[x][y][1]) - 128) + 128))
+			b = max(0, min(255, f * (int(colors[x][y][2]) - 128) + 128))
+			new_colors[x][y] = (r, g, b)
+	return new_colors
 
 
 def adjust_saturation(colors, saturation):
-	print("TODO contrast saturation")
-	return colors
+	# Convert to HSV, adjust S, convert back
+	new_colors = []
+	for x in range(0, len(colors)):
+		new_colors.append(deepcopy(colors[x]))
+		for y in range(0, len(colors[x])):
+			# Convert RGB to HSV
+			hsv = list(rgb_to_hsv(colors[x][y][0], colors[x][y][1], colors[x][y][2]))
+			# Adjust saturation in HSV
+			hsv[1] = hsv[1] * saturation
+			# Convert adjusted HSV back to RGB
+			rgb = hsv_to_rgb(hsv[0], hsv[1], hsv[2])
+			new_colors[x][y] = (int(rgb[0]), int(rgb[1]), int(rgb[2]))
+	return new_colors
 
 
 def create_workbook(use_dmc, width, height, num_colors):
