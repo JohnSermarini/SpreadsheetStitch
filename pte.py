@@ -86,17 +86,17 @@ def main(argv):
 	tk.Label(window, text="Number of Colors [2 - 16]:").pack()
 	entry_num_colors = tk.Entry(window, width=300)
 	entry_num_colors.pack()
-	checkbox_use_dmc_colors = tk.Checkbutton(text="Use DMC color palette", variable=guivar_checkbox_use_dmc, onvalue=True, offvalue=False)
-	checkbox_use_dmc_colors.pack()
+	#checkbox_use_dmc_colors = tk.Checkbutton(text="Use DMC color palette", variable=guivar_checkbox_use_dmc, onvalue=True, offvalue=False)
+	#checkbox_use_dmc_colors.pack()
 	button_select_file = tk.Button(window, text="Select File", width=300, command=lambda : user_select_file())
 	button_select_file.pack()
 	label_file_selected = tk.Label(window, width=300, text="No File Selected", fg="red")
 	label_file_selected.pack()
 	label_file_selected.pack()
-	button_preview = tk.Button(window, text="Preview", width=300, command=lambda : show_preview(guivar_checkbox_use_dmc.get(), entry_width.get(), entry_height.get(), entry_num_colors.get()))
+	button_preview = tk.Button(window, text="Next", width=300, command=lambda : show_preview(guivar_checkbox_use_dmc.get(), entry_width.get(), entry_height.get(), entry_num_colors.get()))
 	button_preview.pack()
-	button_create = tk.Button(window, text="Create", width=300, command=lambda : create_workbook(guivar_checkbox_use_dmc.get(), entry_width.get(), entry_height.get(), entry_num_colors.get()))
-	button_create.pack()
+	#button_create = tk.Button(window, text="Create", width=300, command=lambda : create_workbook(guivar_checkbox_use_dmc.get(), entry_width.get(), entry_height.get(), entry_num_colors.get()))
+	#button_create.pack()
 	window.mainloop()
 
 
@@ -410,16 +410,19 @@ def show_preview(use_dmc, width, height, num_colors):
 	slider_saturation = pltSlider(ax_saturation, 'Saturation', 0, 1.0, valinit=1.0, valstep=0.01)
 	sliders.append(slider_saturation)
 	# Assign on changed update to sliders
+	def adjust_colors_using_slider_vals(colors, brightness, contrast, saturation):
+		new_colors = deepcopy(colors)
+		new_colors = adjust_brightness(new_colors, brightness)
+		new_colors = adjust_contrast(new_colors, contrast)
+		new_colors = adjust_saturation(new_colors, saturation)
+		return new_colors
 	def update(val):
 		# Reset image
 		ax_image.clear()
 		ax_image.set_axis_off()
-		# Adjust image using slider values
-		new_colors = deepcopy(colors)
-		new_colors = adjust_brightness(new_colors, slider_brightness.val)
-		new_colors = adjust_contrast(new_colors, slider_contrast.val)
-		new_colors = adjust_saturation(new_colors, slider_saturation.val)
-		# Update image
+		# Adjust colors
+		new_colors = adjust_colors_using_slider_vals(colors, slider_brightness.val, slider_contrast.val, slider_saturation.val)
+		# Update image using updated colors
 		ax_image.imshow(get_preview_image_from_colors(new_colors), interpolation='none')
 	for slider in sliders:
 		slider.on_changed(update)
@@ -427,9 +430,17 @@ def show_preview(use_dmc, width, height, num_colors):
 	def reset_sliders(event):
 		for slider in sliders:
 			slider.reset()
-	ax_reset = fig.add_axes([0.375, slider_vertical_buffer, 0.25, slider_height])
+	ax_reset = fig.add_axes([0.25, slider_vertical_buffer, 0.25, slider_height])
 	reset_button = pltButton(ax_reset, "Reset", hovercolor="0.75")
 	reset_button.on_clicked(reset_sliders)
+	# Commit Button
+	def create(event):
+		plt.close()
+		new_colors = adjust_colors_using_slider_vals(colors, slider_brightness.val, slider_contrast.val, slider_saturation.val)
+		create_workbook(new_colors, color_map)
+	ax_create = fig.add_axes([0.5, slider_vertical_buffer, 0.25, slider_height])
+	create_button = pltButton(ax_create, "Create", hovercolor="0.75")
+	create_button.on_clicked(create)
 	# Show
 	plt.show()
 
@@ -484,13 +495,13 @@ def adjust_saturation(colors, saturation):
 	return new_colors
 
 
-def create_workbook(use_dmc, width, height, num_colors):
+def create_workbook(colors, color_map):
 	global file_path
 	# Init
 	file_name = get_file_name_from_path(file_path)
-	colors, color_map = create_color_grid(use_dmc, width, height, num_colors)
-	if colors is None:
-		return
+	#colors, color_map = create_color_grid(use_dmc, width, height, num_colors)
+	#if colors is None:
+		#return
 	# Create worksheet
 	wb = Workbook()
 	ws = wb.create_sheet(file_name, index=0)
@@ -522,11 +533,15 @@ def create_workbook(use_dmc, width, height, num_colors):
 	for c in range(-1, len(used_colors)):
 		if(c == -1):
 			ws[get_cell_name(width + legend_buffer, 0)].value = "Color"
-			ws[get_cell_name(width + legend_buffer + 1, 0)].value = "DMC Name"			
-			ws[get_cell_name(width + legend_buffer + 2, 0)].value = "HEX"
-			ws[get_cell_name(width + legend_buffer + 3, 0)].value = "Red Value"
-			ws[get_cell_name(width + legend_buffer + 4, 0)].value = "Green Value"
-			ws[get_cell_name(width + legend_buffer + 5, 0)].value = "Blue Value"
+			#ws[get_cell_name(width + legend_buffer + 1, 0)].value = "DMC Name"			
+			#ws[get_cell_name(width + legend_buffer + 2, 0)].value = "HEX"
+			#ws[get_cell_name(width + legend_buffer + 3, 0)].value = "Red Value"
+			#ws[get_cell_name(width + legend_buffer + 4, 0)].value = "Green Value"
+			#ws[get_cell_name(width + legend_buffer + 5, 0)].value = "Blue Value"
+			ws[get_cell_name(width + legend_buffer + 1, 0)].value = "HEX"
+			ws[get_cell_name(width + legend_buffer + 2, 0)].value = "Red Value"
+			ws[get_cell_name(width + legend_buffer + 3, 0)].value = "Green Value"
+			ws[get_cell_name(width + legend_buffer + 4, 0)].value = "Blue Value"
 			continue		
 		color_rgb = used_colors[c]
 		color_symbol = used_map[c]
@@ -536,11 +551,15 @@ def create_workbook(use_dmc, width, height, num_colors):
 		ws[get_cell_name(width + legend_buffer, c + 1)].fill = styles.PatternFill(fill_type=cell_fill_type, start_color=color_hex, end_color=color_hex)
 		ws[get_cell_name(width + legend_buffer, c + 1)].value = str(color_symbol)
 		ws[get_cell_name(width + legend_buffer, c + 1)].font = cell_font
-		ws[get_cell_name(width + legend_buffer + 1, c + 1)].value = get_dmc_name(use_dmc, color_rgb)
-		ws[get_cell_name(width + legend_buffer + 2, c + 1)].value = str(color_hex)
-		ws[get_cell_name(width + legend_buffer + 3, c + 1)].value = str(color_rgb[0])
-		ws[get_cell_name(width + legend_buffer + 4, c + 1)].value = str(color_rgb[1])
-		ws[get_cell_name(width + legend_buffer + 5, c + 1)].value = str(color_rgb[2])
+		#ws[get_cell_name(width + legend_buffer + 1, c + 1)].value = get_dmc_name(use_dmc, color_rgb)
+		#ws[get_cell_name(width + legend_buffer + 2, c + 1)].value = str(color_hex)
+		#ws[get_cell_name(width + legend_buffer + 3, c + 1)].value = str(color_rgb[0])
+		#ws[get_cell_name(width + legend_buffer + 4, c + 1)].value = str(color_rgb[1])
+		#ws[get_cell_name(width + legend_buffer + 5, c + 1)].value = str(color_rgb[2])
+		ws[get_cell_name(width + legend_buffer + 1, c + 1)].value = str(color_hex)
+		ws[get_cell_name(width + legend_buffer + 2, c + 1)].value = str(color_rgb[0])
+		ws[get_cell_name(width + legend_buffer + 3, c + 1)].value = str(color_rgb[1])
+		ws[get_cell_name(width + legend_buffer + 4, c + 1)].value = str(color_rgb[2])
 	# Save the file
 	output_directory = get_output_directory()
 	output_file_name = get_output_file_name(file_name)
