@@ -59,6 +59,7 @@ legend_buffer = 1
 
 # Program aesthetics values
 error_box_header = "Error"
+window_width = 30
 
 # Program functionality values
 file_path = ""
@@ -76,32 +77,32 @@ def main(argv):
 	## Configure GUI
 	window.title("CSX")
 	set_window_icon(window)
-	window.geometry("400x300")
+	#window.geometry("400x300")
 	window.resizable(width=False, height=False)
 	window.configure(background="white")
 	font = tkFont.Font(family="Times", size=13)
 	## File select
-	button_select_file = tk.Button(window, font=font, text="Select File", width=300, command=lambda : user_select_file())
-	button_select_file.pack(fill=tk.BOTH)
-	label_file_selected = tk.Label(window, font=font, width=300, text="No File Selected", fg="red")
-	label_file_selected.pack(fill=tk.BOTH)
+	button_select_file = tk.Button(window, font=font, text="Select File", width=window_width, command=lambda : user_select_file())
+	button_select_file.pack(fill="both", expand=True)
+	label_file_selected = tk.Label(window, font=font, width=window_width, text="No File Selected", fg="red")
+	label_file_selected.pack(fill="both", expand=True)
 	## Width
-	tk.Label(window, font=font, width=300, text="Width [1 - 99]").pack()
-	entry_width = tk.Entry(window, font=font, width=300)
-	entry_width.pack(fill=tk.BOTH)
+	tk.Label(window, font=font, width=window_width, text="Width [1 - 99]").pack(fill="both", expand=True)
+	entry_width = tk.Entry(window, font=font, width=window_width)
+	entry_width.pack(fill="both", expand=True)
 	## Height
-	tk.Label(window, font=font, width=300, text="Height [1 - 99]").pack()
-	entry_height = tk.Entry(window, font=font, width=300)
-	entry_height.pack(fill=tk.BOTH)
+	tk.Label(window, font=font, width=window_width, text="Height [1 - 99]").pack(fill="both", expand=True)
+	entry_height = tk.Entry(window, font=font, width=window_width)
+	entry_height.pack(fill="both", expand=True)
 	## Colors
-	tk.Label(window, font=font, width=300, text="Number of Colors [2 - 16]").pack()
-	entry_num_colors = tk.Entry(window, font=font, width=300)
-	entry_num_colors.pack(fill=tk.BOTH)
+	tk.Label(window, font=font, width=window_width, text="Number of Colors [2 - 16]").pack(fill="both", expand=True)
+	entry_num_colors = tk.Entry(window, font=font, width=window_width)
+	entry_num_colors.pack(fill="both", expand=True)
 	#checkbox_use_dmc_colors = tk.Checkbutton(text="Use DMC color palette", variable=guivar_checkbox_use_dmc, onvalue=True, offvalue=False)
 	#checkbox_use_dmc_colors.pack()
 	## Next
-	button_preview = tk.Button(window, font=font, text="Next", width=300, command=lambda : show_preview(guivar_checkbox_use_dmc.get(), entry_width.get(), entry_height.get(), entry_num_colors.get()))
-	button_preview.pack(fill=tk.BOTH)
+	button_preview = tk.Button(window, font=font, text="Next", width=window_width, command=lambda : show_preview(guivar_checkbox_use_dmc.get(), entry_width.get(), entry_height.get(), entry_num_colors.get()))
+	button_preview.pack(fill="both", expand=True)
 	#button_create = tk.Button(window, text="Create", width=300, command=lambda : create_workbook(guivar_checkbox_use_dmc.get(), entry_width.get(), entry_height.get(), entry_num_colors.get()))
 	#button_create.pack()
 	window.mainloop()
