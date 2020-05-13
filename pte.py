@@ -13,6 +13,7 @@ from openpyxl import load_workbook
 from string import ascii_uppercase
 import numpy as np
 import tkinter as tk
+import tkinter.font as tkFont
 from tkinter import filedialog
 from tkinter import messagebox
 import matplotlib as mpl
@@ -67,34 +68,40 @@ label_file_selected = None
 
 
 def main(argv):
-	# Init
+	## Init
 	window = tk.Tk()
 	guivar_checkbox_use_dmc = tk.IntVar()
 	global label_file_selected
 
-	# Configure GUI
+	## Configure GUI
 	window.title("CSX")
-	window.geometry("300x300")
-	window.configure(background="white")
 	set_window_icon(window)
-	tk.Label(window, text="Width [1 - 99]:").pack()
-	entry_width = tk.Entry(window, width=300)
-	entry_width.pack()
-	tk.Label(window, text="Height [1 - 99]:").pack()
-	entry_height = tk.Entry(window, width=300)
-	entry_height.pack()
-	tk.Label(window, text="Number of Colors [2 - 16]:").pack()
-	entry_num_colors = tk.Entry(window, width=300)
-	entry_num_colors.pack()
+	window.geometry("400x300")
+	window.resizable(width=False, height=False)
+	window.configure(background="white")
+	font = tkFont.Font(family="Times", size=13)
+	## File select
+	button_select_file = tk.Button(window, font=font, text="Select File", width=300, command=lambda : user_select_file())
+	button_select_file.pack(fill=tk.BOTH)
+	label_file_selected = tk.Label(window, font=font, width=300, text="No File Selected", fg="red")
+	label_file_selected.pack(fill=tk.BOTH)
+	## Width
+	tk.Label(window, font=font, width=300, text="Width [1 - 99]").pack()
+	entry_width = tk.Entry(window, font=font, width=300)
+	entry_width.pack(fill=tk.BOTH)
+	## Height
+	tk.Label(window, font=font, width=300, text="Height [1 - 99]").pack()
+	entry_height = tk.Entry(window, font=font, width=300)
+	entry_height.pack(fill=tk.BOTH)
+	## Colors
+	tk.Label(window, font=font, width=300, text="Number of Colors [2 - 16]").pack()
+	entry_num_colors = tk.Entry(window, font=font, width=300)
+	entry_num_colors.pack(fill=tk.BOTH)
 	#checkbox_use_dmc_colors = tk.Checkbutton(text="Use DMC color palette", variable=guivar_checkbox_use_dmc, onvalue=True, offvalue=False)
 	#checkbox_use_dmc_colors.pack()
-	button_select_file = tk.Button(window, text="Select File", width=300, command=lambda : user_select_file())
-	button_select_file.pack()
-	label_file_selected = tk.Label(window, width=300, text="No File Selected", fg="red")
-	label_file_selected.pack()
-	label_file_selected.pack()
-	button_preview = tk.Button(window, text="Next", width=300, command=lambda : show_preview(guivar_checkbox_use_dmc.get(), entry_width.get(), entry_height.get(), entry_num_colors.get()))
-	button_preview.pack()
+	## Next
+	button_preview = tk.Button(window, font=font, text="Next", width=300, command=lambda : show_preview(guivar_checkbox_use_dmc.get(), entry_width.get(), entry_height.get(), entry_num_colors.get()))
+	button_preview.pack(fill=tk.BOTH)
 	#button_create = tk.Button(window, text="Create", width=300, command=lambda : create_workbook(guivar_checkbox_use_dmc.get(), entry_width.get(), entry_height.get(), entry_num_colors.get()))
 	#button_create.pack()
 	window.mainloop()
