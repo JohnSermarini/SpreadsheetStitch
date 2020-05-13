@@ -128,7 +128,8 @@ def read_image(file_name):
 
 def set_window_icon(window):
 	try:
-		window.iconbitmap("window_icon.ico")
+		#window.iconbitmap("graphics\\window_icon.ico")
+		window.iconbitmap("graphics\\logo_window.ico")
 	except Exception as e:
 		print("Error: 'window_icon.ico' not found")
 
