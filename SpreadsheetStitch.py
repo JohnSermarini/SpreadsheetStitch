@@ -1,11 +1,31 @@
-"""
-Name: TBD Cross Stich application 
-Desc: ~
-Auth: John Sermarini
-"""
 
-import sys
-import os
+#################################
+#      Spreadsheet Stitch       #
+#        John Sermarini         #
+#################################
+
+########## To Do List ###########
+#
+#
+#
+#
+#
+#
+#################################
+
+########## Wish List ############
+#
+# - Reimplement DMC Colors
+# - Mac port
+# - Custom symbols
+# - Trim white spcae option
+#
+#################################
+
+
+#import sys
+from sys import argv as argv
+#import os
 from PIL import Image
 from openpyxl import styles
 from openpyxl import Workbook
@@ -23,34 +43,6 @@ from matplotlib.widgets import Button as pltButton
 from copy import deepcopy
 from colorsys import rgb_to_hsv, hsv_to_rgb
 
-################################################################################################
-
-# TODO Add check to make sure files output folder and color chart are present
-
-# TODO check out openpyxl.utils.cell.get_column_letter(idx)
-# from openpyxl.utils import get_column_letter
-
-# TODO settings to GUI
-# PYQT5????
-
-# TODO add pixelizing to decrease image complexity
-
-# TODO get dmc name
-
-# TODO trim white space in image
-
-# TODO give option for outer buffer in image after trimming
-
-# TODO custom symbols/colors
-
-# TODO sliders affect colors outside of preview
-
-"""
-TODO error checks:
-is path less than 5 characters
-"""
-################################################################################################
-
 
 # CSV formatting values
 column_size = 2.8 # This number is about 20 pixels, same as the default height
@@ -60,6 +52,8 @@ legend_buffer = 1
 # Program aesthetics values
 error_box_header = "Error"
 window_width = 30
+window_title = "Spreadsheet Stitch"
+color_base = "#217346"
 
 # Program functionality values
 file_path = ""
@@ -75,17 +69,17 @@ def main(argv):
 	global label_file_selected
 
 	## Configure GUI
-	window.title("CSX")
+	window.title(window_title)
 	set_window_icon(window)
 	#window.geometry("400x300")
 	window.resizable(width=False, height=False)
 	window.configure(background="white")
 	font = tkFont.Font(family="Times", size=13)
 	## File select
-	button_select_file = tk.Button(window, font=font, text="Select File", width=window_width, command=lambda : user_select_file())
-	button_select_file.pack(fill="both", expand=True)
 	label_file_selected = tk.Label(window, font=font, width=window_width, text="No File Selected", fg="red")
 	label_file_selected.pack(fill="both", expand=True)
+	button_select_file = tk.Button(window, font=font, text="Select File", width=window_width, command=lambda : user_select_file())
+	button_select_file.pack(fill="both", expand=True)
 	## Width
 	tk.Label(window, font=font, width=window_width, text="Width [1 - 99]").pack(fill="both", expand=True)
 	entry_width = tk.Entry(window, font=font, width=window_width)
@@ -391,11 +385,11 @@ def show_preview(use_dmc, width, height, num_colors):
 	if colors is None:
 		return
 	# Set preview window details
-	mpl.rcParams['toolbar'] = 'None'
-	fig = plt.figure(num='Preview')
+	mpl.rcParams['toolbar'] = "None"
+	fig = plt.figure(num=window_title)
 	# Image
 	ax_image = fig.add_axes([0, 0.33, 1.0, 0.66]) # add_axes([left, bottom, width, height])
-	ax_image.imshow(get_preview_image_from_colors(colors), interpolation='none')
+	ax_image.imshow(get_preview_image_from_colors(colors), interpolation="none")
 	ax_image.set_axis_off()
 	# Add sliders
 	sliders = []
@@ -406,17 +400,17 @@ def show_preview(use_dmc, width, height, num_colors):
 	# Brightness
 	slider_vertical_offset = slider_vertical_buffer + slider_height + slider_vertical_buffer
 	ax_slider = fig.add_axes([slider_left_offset, slider_vertical_offset, slider_width, slider_height]) # add_axes([left, bottom, width, height])
-	slider_brightness = pltSlider(ax_slider, 'Brightness', 0, 2.0, valinit=1.0, valstep=0.01)
+	slider_brightness = pltSlider(ax_slider, 'Brightness', 0, 2.0, valinit=1.0, valstep=0.01, color=color_base)
 	sliders.append(slider_brightness)
 	# Contrast
 	slider_vertical_offset = slider_vertical_offset + slider_height + slider_vertical_buffer
 	ax_contrast = fig.add_axes([slider_left_offset, slider_vertical_offset, slider_width, slider_height]) # add_axes([left, bottom, width, height])
-	slider_contrast = pltSlider(ax_contrast, 'Contrast', 0, 1.0, valinit=0.5, valstep=0.01)
+	slider_contrast = pltSlider(ax_contrast, 'Contrast', 0, 1.0, valinit=0.5, valstep=0.01, color=color_base)
 	sliders.append(slider_contrast)
 	# Saturation
 	slider_vertical_offset = slider_vertical_offset + slider_height + slider_vertical_buffer
 	ax_saturation = fig.add_axes([slider_left_offset, slider_vertical_offset, slider_width, slider_height]) # add_axes([left, bottom, width, height])
-	slider_saturation = pltSlider(ax_saturation, 'Saturation', 0, 1.0, valinit=1.0, valstep=0.01)
+	slider_saturation = pltSlider(ax_saturation, 'Saturation', 0, 1.0, valinit=1.0, valstep=0.01, color=color_base)
 	sliders.append(slider_saturation)
 	# Assign on changed update to sliders
 	def adjust_colors_using_slider_vals(colors, brightness, contrast, saturation):
@@ -654,4 +648,4 @@ def get_file_name_from_path(file_path):
 
 
 if __name__ == "__main__":
-	main(sys.argv[1:])
+	main(argv[1:])

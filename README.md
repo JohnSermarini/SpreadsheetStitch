@@ -1,2 +1,2 @@
-# CrossStitchExtreme
+# Spreadsheet Stitch
  
