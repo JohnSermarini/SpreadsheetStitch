@@ -1,24 +1,28 @@
 
 #################################
-#      Spreadsheet Stitch       #
-#        John Sermarini         #
+#      Spreadsheet Stitch       
+#        John Sermarini         
+#            v0.9               
 #################################
 
 ########## To Do List ###########
 #
-#
-#
-#
-#
+# - Check for patterns folder (create if not there)
+# - Make sure file name label fits more of the file name
+# - Add indication that its creating the output file
+# - Create Readme
+# - Clean imports to shrink .exe file size
+# - Mac build set up
 #
 #################################
 
 ########## Wish List ############
 #
+# - Choose output folder/file name
 # - Reimplement DMC Colors
 # - Mac port
 # - Custom symbols
-# - Trim white spcae option
+# - Trim white space option
 #
 #################################
 
@@ -105,7 +109,7 @@ def main(argv):
 def get_output_directory():
 	#TODO 
 	#TODO make directory if it doesn't exist
-	return "out"
+	return "Patterns"
 
 
 def get_output_file_name(file_name):
@@ -131,9 +135,9 @@ def read_image(file_name):
 def set_window_icon(window):
 	try:
 		#window.iconbitmap("graphics\\window_icon.ico")
-		window.iconbitmap("graphics\\logo_window.ico")
+		window.iconbitmap("graphics\\logo.ico")
 	except Exception as e:
-		print("Error: 'window_icon.ico' not found")
+		print("Error: 'graphics\\logo.ico' not found")
 
 
 #############################################
