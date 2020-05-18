@@ -12,7 +12,7 @@
 # - Mac build set up
 # - Add image dimensions to GUI
 # - Improve color adjustment algorithm for larger images
-# - Disable buttons during progress
+# - Fix thread closing issue
 # 
 #################################
 
@@ -75,6 +75,8 @@ min_dimension_input = 1
 ## GUI values
 label_file_selected = None
 progress_bar = None
+button_select_file = None
+button_preview = None
 
 
 def main(argv):
@@ -83,6 +85,8 @@ def main(argv):
 	guivar_checkbox_use_dmc = tk.IntVar()
 	global label_file_selected
 	global progress_bar
+	global button_select_file
+	global button_preview
 
 	## Configure GUI
 	window.title(window_title)
@@ -404,6 +408,11 @@ def show_preview(use_dmc, width, height, num_colors):
 	## Set preview window details
 	rcParams['toolbar'] = "None"
 	fig = plt.figure(num=window_title)
+	## Set main GUI button status
+	def handle_close(evt):
+		enable_gui_buttons()
+	disable_gui_buttons()
+	fig.canvas.mpl_connect('close_event', handle_close)
 	## Image
 	ax_image = fig.add_axes([0, 0.33, 1.0, 0.66]) # add_axes([left, bottom, width, height])
 	ax_image.imshow(get_preview_image_from_colors(colors), interpolation="none")
@@ -455,10 +464,15 @@ def show_preview(use_dmc, width, height, num_colors):
 	reset_button.on_clicked(reset_sliders)
 	## Commit Button
 	def create(event):
+		## Close the window
 		plt.close()
+		disable_gui_buttons() # Make sure buttons are disabled after they are re-enabled by the matplotlib window closing event
+		## Create the workbook file
 		new_colors = adjust_colors_using_slider_vals(colors, slider_brightness.val, slider_contrast.val, slider_saturation.val)
 		#create_workbook(new_colors, color_map)
-		Thread(target=create_workbook, args=[new_colors, color_map]).start()
+		workbook_thread = Thread(target=create_workbook, args=[new_colors, color_map])
+		workbook_thread.daemon = True
+		workbook_thread.start()
 	ax_create = fig.add_axes([0.5, slider_vertical_buffer, 0.25, slider_height])
 	create_button = pltButton(ax_create, "Create", hovercolor="0.75")
 	create_button.on_clicked(create)
@@ -597,12 +611,27 @@ def create_workbook(colors, color_map):
 		print(output_file_name + " save failed")
 		tk.messagebox.showinfo(error_box_header, "Error: Save failed. Make sure file '" + get_file_name_from_path(output_file_name) + "' is not already open on computer.")
 	set_progress(0, 1)
+	enable_gui_buttons()
 
 
 def set_progress(current_val, max_val):
 	global progress_bar
 	progress = (float(current_val) / float(max_val)) * 100
 	progress_bar["value"] = progress
+
+
+def enable_gui_buttons():
+	global button_select_file
+	global button_preview
+	button_select_file["state"] = "normal"
+	button_preview["state"] = "normal"
+
+
+def disable_gui_buttons():
+	global button_select_file
+	global button_preview	
+	button_select_file["state"] = "disable"
+	button_preview["state"] = "disable"
 
 
 #############################################
