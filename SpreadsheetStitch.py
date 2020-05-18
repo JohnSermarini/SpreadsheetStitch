@@ -12,7 +12,7 @@
 # - Mac build set up
 # - Add image dimensions to GUI
 # - Improve color adjustment algorithm for larger images
-# - Multithreading??? Progress indication????
+# - Disable buttons during progress
 # 
 #################################
 
@@ -50,20 +50,21 @@ from matplotlib.widgets import Slider as pltSlider
 from matplotlib.widgets import Button as pltButton
 from copy import deepcopy
 from colorsys import rgb_to_hsv, hsv_to_rgb
+from threading import Thread
 
 
-# CSV formatting values
+## CSV formatting values
 column_size = 2.8 # This number is about 20 pixels, same as the default height
 cell_fill_type = 'solid'
 legend_buffer = 1
 
-# Program aesthetics values
+## Program aesthetics values
 error_box_header = "Error"
 window_width = 30
 window_title = "Spreadsheet Stitch"
 color_base = "#217346"
 
-# Program functionality values
+## Program functionality values
 file_path = ""
 csv_output_directory = "Patterns"
 max_color_input = 32
@@ -71,8 +72,9 @@ min_color_input = 1
 max_dimension_input = 500
 min_dimension_input = 1
 
-# GUI values
+## GUI values
 label_file_selected = None
+progress_bar = None
 
 
 def main(argv):
@@ -80,6 +82,7 @@ def main(argv):
 	window = tk.Tk()
 	guivar_checkbox_use_dmc = tk.IntVar()
 	global label_file_selected
+	global progress_bar
 
 	## Configure GUI
 	window.title(window_title)
@@ -111,7 +114,9 @@ def main(argv):
 	button_preview = tk.Button(window, font=font, text="Next", width=window_width, command=lambda : show_preview(guivar_checkbox_use_dmc.get(), entry_width.get(), entry_height.get(), entry_num_colors.get()))
 	button_preview.pack(fill="both", expand=True)
 	## Progress bar
-	#progress = Progressbar(window, orient = tk.HORIZONTAL, length = 100, mode = 'determinate').pack(fill="both", expand=True)
+	progress_bar = Progressbar(window, orient=tk.HORIZONTAL, length=100, value=0, mode='determinate')
+	progress_bar.pack(fill="both", expand=True)
+	set_progress(0, 1)
 	window.mainloop()
 
 
@@ -132,12 +137,10 @@ def get_output_file_name(file_name):
 def read_image(file_name):
 	try:
 		image = Image.open(file_name)
-
 		return image
 	except Exception as e:
 		raise e
 		#TODO image not found handling
-
 		return None
 
 
@@ -241,18 +244,18 @@ def reduce_color_palette(image, num_colors):
 # OUT: 2D array with each value containing a rgb tuple
 #############################################
 def convert_colors_to_dmc(colors, color_map, num_colors):
-	# Init color replacement array
+	## Init color replacement array
 	converted_colors = []
 	for i in range(0, num_colors):
 		converted_colors.append((-1, -1, -1))
-	# Replace every color with the converted color
+	## Replace every color with the converted color
 	for x in range(0, len(colors)):
 		for y in range(0, len(colors[x])):
 			map_value = color_map[x][y]
-			# Converted color not set
+			## Converted color not set
 			if(converted_colors[map_value] == (-1, -1, -1)):
 				converted_colors[map_value] = find_closest_dmc_color(colors[x][y])
-			# Replace color
+			## Replace color
 			colors[x][y] = converted_colors[map_value]
 	return colors
 
@@ -300,7 +303,7 @@ def get_used_color_palette(colors, color_map):
 	used_colors = []
 	used_map = []
 
-	# Get list of used colors
+	## Get list of used colors
 	for x in range(0, len(colors)):
 		for y in range(0, len(colors[x])):
 			color = colors[x][y]
@@ -334,9 +337,9 @@ def get_worksheet_name():
 def user_select_file():
 	global file_path
 	global label_file_selected
-	# Get path
+	## Get path
 	file_path = filedialog.askopenfilename() # Returns string
-	# Update label and console
+	## Update label and console
 	label_file_selected["text"] = get_file_name_from_path(file_path)
 	label_file_selected["fg"] = "green"
 	print("File:", file_path)
@@ -353,24 +356,24 @@ def create_color_grid(use_dmc, width, height, num_colors):
 	if not num_colors_valid(num_colors):
 		return None, None
 
-	# Init
+	## Init
 	file_name = get_file_name_from_path(file_path)
 	width = int(width)
 	height = int(height)
 	num_colors = int(num_colors)
 
-	# Get image from file
+	## Get image from file
 	image = read_image(file_path)
 	image = adjust_image_size(image, width, height)
 	image = trim_image(image)
 
-	# Get colors from image
+	## Get colors from image
 	image = reduce_color_palette(image, num_colors)
 	colors, color_map = get_colors(image)
 	if use_dmc:
 		colors = convert_colors_to_dmc(colors, color_map, num_colors)
 
-	# Close
+	## Close
 	image.close()	
 
 	return colors, color_map
@@ -394,39 +397,39 @@ def create_color_grid(use_dmc, width, height, num_colors):
 
 # Slider tutorial https://riptutorial.com/matplotlib/example/23577/interactive-controls-with-matplotlib-widgets
 def show_preview(use_dmc, width, height, num_colors):
-	# Init
+	## Init
 	colors, color_map = create_color_grid(use_dmc, width, height, num_colors)
 	if colors is None:
 		return
-	# Set preview window details
+	## Set preview window details
 	rcParams['toolbar'] = "None"
 	fig = plt.figure(num=window_title)
-	# Image
+	## Image
 	ax_image = fig.add_axes([0, 0.33, 1.0, 0.66]) # add_axes([left, bottom, width, height])
 	ax_image.imshow(get_preview_image_from_colors(colors), interpolation="none")
 	ax_image.set_axis_off()
-	# Add sliders
+	## Add sliders
 	sliders = []
 	slider_width = 0.5
 	slider_height = 0.05
 	slider_left_offset = (1.0 - slider_width) / 2.0
 	slider_vertical_buffer = 0.025
-	# Brightness
+	## Brightness
 	slider_vertical_offset = slider_vertical_buffer + slider_height + slider_vertical_buffer
 	ax_slider = fig.add_axes([slider_left_offset, slider_vertical_offset, slider_width, slider_height]) # add_axes([left, bottom, width, height])
 	slider_brightness = pltSlider(ax_slider, 'Brightness', 0, 2.0, valinit=1.0, valstep=0.01, color=color_base)
 	sliders.append(slider_brightness)
-	# Contrast
+	## Contrast
 	slider_vertical_offset = slider_vertical_offset + slider_height + slider_vertical_buffer
 	ax_contrast = fig.add_axes([slider_left_offset, slider_vertical_offset, slider_width, slider_height]) # add_axes([left, bottom, width, height])
 	slider_contrast = pltSlider(ax_contrast, 'Contrast', 0, 1.0, valinit=0.5, valstep=0.01, color=color_base)
 	sliders.append(slider_contrast)
-	# Saturation
+	## Saturation
 	slider_vertical_offset = slider_vertical_offset + slider_height + slider_vertical_buffer
 	ax_saturation = fig.add_axes([slider_left_offset, slider_vertical_offset, slider_width, slider_height]) # add_axes([left, bottom, width, height])
 	slider_saturation = pltSlider(ax_saturation, 'Saturation', 0, 1.0, valinit=1.0, valstep=0.01, color=color_base)
 	sliders.append(slider_saturation)
-	# Assign on changed update to sliders
+	## Assign on changed update to sliders
 	def adjust_colors_using_slider_vals(colors, brightness, contrast, saturation):
 		new_colors = deepcopy(colors)
 		new_colors = adjust_brightness(new_colors, brightness)
@@ -443,27 +446,28 @@ def show_preview(use_dmc, width, height, num_colors):
 		ax_image.imshow(get_preview_image_from_colors(new_colors), interpolation='none')
 	for slider in sliders:
 		slider.on_changed(update)
-	# Reset Button
+	## Reset Button
 	def reset_sliders(event):
 		for slider in sliders:
 			slider.reset()
 	ax_reset = fig.add_axes([0.25, slider_vertical_buffer, 0.25, slider_height])
 	reset_button = pltButton(ax_reset, "Reset", hovercolor="0.75")
 	reset_button.on_clicked(reset_sliders)
-	# Commit Button
+	## Commit Button
 	def create(event):
 		plt.close()
 		new_colors = adjust_colors_using_slider_vals(colors, slider_brightness.val, slider_contrast.val, slider_saturation.val)
-		create_workbook(new_colors, color_map)
+		#create_workbook(new_colors, color_map)
+		Thread(target=create_workbook, args=[new_colors, color_map]).start()
 	ax_create = fig.add_axes([0.5, slider_vertical_buffer, 0.25, slider_height])
 	create_button = pltButton(ax_create, "Create", hovercolor="0.75")
 	create_button.on_clicked(create)
-	# Show
+	## Show
 	plt.show()
 
 
 def get_preview_image_from_colors(colors):
-	# Adjust orientation
+	## Adjust orientation
 	#rotated_colors = np.rot90(colors, k=3, axes=(0,1))
 	rotated_colors = rot90(colors, k=3, axes=(0,1))
 	#rotated_colors = np.fliplr(rotated_colors)
@@ -499,16 +503,16 @@ def adjust_contrast(colors, contrast):
 
 
 def adjust_saturation(colors, saturation):
-	# Convert to HSV, adjust S, convert back
+	## Convert to HSV, adjust S, convert back
 	new_colors = []
 	for x in range(0, len(colors)):
 		new_colors.append(deepcopy(colors[x]))
 		for y in range(0, len(colors[x])):
-			# Convert RGB to HSV
+			## Convert RGB to HSV
 			hsv = list(rgb_to_hsv(colors[x][y][0], colors[x][y][1], colors[x][y][2]))
-			# Adjust saturation in HSV
+			## Adjust saturation in HSV
 			hsv[1] = hsv[1] * saturation
-			# Convert adjusted HSV back to RGB
+			## Convert adjusted HSV back to RGB
 			rgb = hsv_to_rgb(hsv[0], hsv[1], hsv[2])
 			new_colors[x][y] = (int(rgb[0]), int(rgb[1]), int(rgb[2]))
 	return new_colors
@@ -516,18 +520,19 @@ def adjust_saturation(colors, saturation):
 
 def create_workbook(colors, color_map):
 	global file_path
-	# Init
+	## Init
 	file_name = get_file_name_from_path(file_path)
 	#colors, color_map = create_color_grid(use_dmc, width, height, num_colors)
 	#if colors is None:
 		#return
-	# Create worksheet
+	## Create worksheet
 	wb = Workbook()
 	ws = wb.create_sheet(file_name, index=0)
-	# Fill worksheet
+	## Fill worksheet
 	#fill_type = 'solid'
 	for x in range(0, len(colors)):
 		print("Converting - " +  str(x) + "/" + str(len(colors)) + " to Excel")
+		set_progress(x + 1, len(colors))
 		for y in range(0, len(colors[x])):
 			cell_color = rgb_to_hex(colors[x][y])
 			font_color = get_font_color(colors[x][y])
@@ -545,7 +550,7 @@ def create_workbook(colors, color_map):
 			ws[cell_name].font = cell_font
 		ws.column_dimensions[get_column(x + 1)].width = column_size # Set column size
 	print("Conversion complete")
-	# Add legend
+	## Add legend
 	used_colors, used_map = get_used_color_palette(colors, color_map)
 	#width = len(colors[0])
 	width = len(colors)
@@ -579,7 +584,7 @@ def create_workbook(colors, color_map):
 		ws[get_cell_name(width + legend_buffer + 2, c + 1)].value = str(color_rgb[0])
 		ws[get_cell_name(width + legend_buffer + 3, c + 1)].value = str(color_rgb[1])
 		ws[get_cell_name(width + legend_buffer + 4, c + 1)].value = str(color_rgb[2])
-	# Save the file
+	## Save the file
 	check_output_directory()
 	output_directory = csv_output_directory
 	output_file_name = get_output_file_name(file_name)
@@ -591,6 +596,13 @@ def create_workbook(colors, color_map):
 	else:
 		print(output_file_name + " save failed")
 		tk.messagebox.showinfo(error_box_header, "Error: Save failed. Make sure file '" + get_file_name_from_path(output_file_name) + "' is not already open on computer.")
+	set_progress(0, 1)
+
+
+def set_progress(current_val, max_val):
+	global progress_bar
+	progress = (float(current_val) / float(max_val)) * 100
+	progress_bar["value"] = progress
 
 
 #############################################
@@ -607,12 +619,12 @@ def save_wb(wb, output_file_path):
 
 
 def file_path_valid(file_path):
-	# Check for empty path
+	## Check for empty path
 	if file_path == "":
 		print("Error: Path file path empty.")
 		messagebox.showinfo(error_box_header, "Error: Path file path empty.")
 		return False
-	# Check file type
+	## Check file type
 	file_extension = file_path[-5:].lower()
 	if  ".jpg" not in file_extension.lower() and \
 		".png" not in file_extension.lower() and \
@@ -624,7 +636,7 @@ def file_path_valid(file_path):
 
 
 def dimensions_valid(width, height):
-	# Check if eheight and width are numbers
+	## Check if height and width are numbers
 	if not width.isnumeric():
 		print("Error: Width contains non-numeric characters.")
 		messagebox.showinfo(error_box_header, "Error: Width contains non-numeric characters.")
@@ -633,7 +645,7 @@ def dimensions_valid(width, height):
 		print("Error: Height contains non-numeric characters.")
 		messagebox.showinfo(error_box_header, "Error: Height contains non-numeric characters.")
 		return False
-	# Check if height in width are within the desired range
+	## Check if height in width are within the desired range
 	width = int(width)
 	height = int(height)
 	if width < min_dimension_input or width > max_dimension_input:
@@ -648,10 +660,12 @@ def dimensions_valid(width, height):
 
 
 def num_colors_valid(num_colors):
+	## Check if number is numeric
 	if not num_colors.isnumeric():
 		print("Error: Number of Colors contains non-numeric characters.")
 		messagebox.showinfo(error_box_header, "Error: Number of Colors contains non-numeric characters.")
 		return False
+	## Check if in desired range
 	num_colors = int(num_colors)
 	if num_colors < min_color_input or num_colors > max_color_input:
 		print("Error: Number of Colors '" + str(num_colors) + "' not valid. Must be between "  + str(min_color_input) + " and " + str(max_color_input))
