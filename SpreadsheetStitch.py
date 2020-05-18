@@ -7,13 +7,13 @@
 
 ########## To Do List ###########
 #
-# - Check for patterns folder (create if not there)
-# - Make sure file name label fits more of the file name
-# - Add indication that its creating the output file
 # - Create Readme
 # - Clean imports to shrink .exe file size
 # - Mac build set up
-#
+# - Add image dimensions to GUI
+# - Improve color adjustment algorithm for larger images
+# - Multithreading??? Progress indication????
+# 
 #################################
 
 ########## Wish List ############
@@ -29,19 +29,23 @@
 
 #import sys
 from sys import argv as argv
-#import os
+from os import path, mkdir
 from PIL import Image
 from openpyxl import styles
 from openpyxl import Workbook
 from openpyxl import load_workbook
 from string import ascii_uppercase
-import numpy as np
+from numpy import rot90, fliplr
+from numpy.linalg import norm
+#import numpy as np
 import tkinter as tk
 import tkinter.font as tkFont
 from tkinter import filedialog
 from tkinter import messagebox
-import matplotlib as mpl
+from tkinter.ttk import Progressbar
+#import matplotlib as mpl
 from matplotlib import pyplot as plt
+from matplotlib import rcParams
 from matplotlib.widgets import Slider as pltSlider
 from matplotlib.widgets import Button as pltButton
 from copy import deepcopy
@@ -61,6 +65,11 @@ color_base = "#217346"
 
 # Program functionality values
 file_path = ""
+csv_output_directory = "Patterns"
+max_color_input = 32
+min_color_input = 1
+max_dimension_input = 500
+min_dimension_input = 1
 
 # GUI values
 label_file_selected = None
@@ -85,15 +94,15 @@ def main(argv):
 	button_select_file = tk.Button(window, font=font, text="Select File", width=window_width, command=lambda : user_select_file())
 	button_select_file.pack(fill="both", expand=True)
 	## Width
-	tk.Label(window, font=font, width=window_width, text="Width [1 - 99]").pack(fill="both", expand=True)
+	tk.Label(window, font=font, width=window_width, text="Width [" + str(min_dimension_input) + " - " + str(max_dimension_input) + "]").pack(fill="both", expand=True)
 	entry_width = tk.Entry(window, font=font, width=window_width)
 	entry_width.pack(fill="both", expand=True)
 	## Height
-	tk.Label(window, font=font, width=window_width, text="Height [1 - 99]").pack(fill="both", expand=True)
+	tk.Label(window, font=font, width=window_width, text="Height [" + str(min_dimension_input) + " - " + str(max_dimension_input) + "]").pack(fill="both", expand=True)
 	entry_height = tk.Entry(window, font=font, width=window_width)
 	entry_height.pack(fill="both", expand=True)
 	## Colors
-	tk.Label(window, font=font, width=window_width, text="Number of Colors [2 - 16]").pack(fill="both", expand=True)
+	tk.Label(window, font=font, width=window_width, text="Number of Colors [" + str(min_color_input) + " - " + str(max_color_input) + "]").pack(fill="both", expand=True)
 	entry_num_colors = tk.Entry(window, font=font, width=window_width)
 	entry_num_colors.pack(fill="both", expand=True)
 	#checkbox_use_dmc_colors = tk.Checkbutton(text="Use DMC color palette", variable=guivar_checkbox_use_dmc, onvalue=True, offvalue=False)
@@ -101,15 +110,15 @@ def main(argv):
 	## Next
 	button_preview = tk.Button(window, font=font, text="Next", width=window_width, command=lambda : show_preview(guivar_checkbox_use_dmc.get(), entry_width.get(), entry_height.get(), entry_num_colors.get()))
 	button_preview.pack(fill="both", expand=True)
-	#button_create = tk.Button(window, text="Create", width=300, command=lambda : create_workbook(guivar_checkbox_use_dmc.get(), entry_width.get(), entry_height.get(), entry_num_colors.get()))
-	#button_create.pack()
+	## Progress bar
+	#progress = Progressbar(window, orient = tk.HORIZONTAL, length = 100, mode = 'determinate').pack(fill="both", expand=True)
 	window.mainloop()
 
 
-def get_output_directory():
-	#TODO 
-	#TODO make directory if it doesn't exist
-	return "Patterns"
+#Create output directory if it does not exist
+def check_output_directory():
+	if not path.isdir(csv_output_directory):
+		mkdir(csv_output_directory)
 
 
 def get_output_file_name(file_name):
@@ -258,7 +267,8 @@ def find_closest_dmc_color(color):
 		r = color[0] - dmc_colors[d][0]
 		g = color[1] - dmc_colors[d][1]
 		b = color[2] - dmc_colors[d][2]
-		euclidean_distance = np.linalg.norm([r, g, b])
+		#euclidean_distance = np.linalg.norm([r, g, b])
+		euclidean_distance = norm([r, g, b])
 		if(euclidean_distance < closest_distance):
 			closest_distance = euclidean_distance
 			closest_index = d
@@ -389,7 +399,7 @@ def show_preview(use_dmc, width, height, num_colors):
 	if colors is None:
 		return
 	# Set preview window details
-	mpl.rcParams['toolbar'] = "None"
+	rcParams['toolbar'] = "None"
 	fig = plt.figure(num=window_title)
 	# Image
 	ax_image = fig.add_axes([0, 0.33, 1.0, 0.66]) # add_axes([left, bottom, width, height])
@@ -454,8 +464,10 @@ def show_preview(use_dmc, width, height, num_colors):
 
 def get_preview_image_from_colors(colors):
 	# Adjust orientation
-	rotated_colors = np.rot90(colors, k=3, axes=(0,1))
-	rotated_colors = np.fliplr(rotated_colors)
+	#rotated_colors = np.rot90(colors, k=3, axes=(0,1))
+	rotated_colors = rot90(colors, k=3, axes=(0,1))
+	#rotated_colors = np.fliplr(rotated_colors)
+	rotated_colors = fliplr(rotated_colors)
 	return rotated_colors
 
 
@@ -568,7 +580,8 @@ def create_workbook(colors, color_map):
 		ws[get_cell_name(width + legend_buffer + 3, c + 1)].value = str(color_rgb[1])
 		ws[get_cell_name(width + legend_buffer + 4, c + 1)].value = str(color_rgb[2])
 	# Save the file
-	output_directory = get_output_directory()
+	check_output_directory()
+	output_directory = csv_output_directory
 	output_file_name = get_output_file_name(file_name)
 	output_file_path = output_directory + "\\" + output_file_name
 	save_success = save_wb(wb, output_file_path)
@@ -623,13 +636,13 @@ def dimensions_valid(width, height):
 	# Check if height in width are within the desired range
 	width = int(width)
 	height = int(height)
-	if width < 1 or width > 99:
-		print("Error: Width '" + str(width) + "' not valid. Must be between 1 and 99.")
-		messagebox.showinfo(error_box_header, "Error: Width '" + str(width) + "' not valid. Must be between 1 and 99.")
+	if width < min_dimension_input or width > max_dimension_input:
+		print("Error: Width '" + str(width) + "' not valid. Must be between " + str(min_dimension_input) + " and " + str(max_dimension_input) + ".")
+		messagebox.showinfo(error_box_header, "Error: Width '" + str(width) + "' not valid. Must be between " + str(min_dimension_input) + " and " + str(max_dimension_input) + ".")
 		return False
-	if height < 1 or height > 99:
-		print("Error: Height '" + str(height) + "' not valid. Must be between 1 and 99.")
-		messagebox.showinfo(error_box_header, "Error: Height '" + str(height) + "' not valid. Must be between 1 and 99.")
+	if height < min_dimension_input or height > max_dimension_input:
+		print("Error: Height '" + str(height) + "' not valid. Must be between " + str(min_dimension_input) + " and " + str(max_dimension_input) + ".")
+		messagebox.showinfo(error_box_header, "Error: Height '" + str(height) + "' not valid. Must be " + str(min_dimension_input) + " and " + str(max_dimension_input) + ".")
 		return False
 	return True
 
@@ -640,9 +653,9 @@ def num_colors_valid(num_colors):
 		messagebox.showinfo(error_box_header, "Error: Number of Colors contains non-numeric characters.")
 		return False
 	num_colors = int(num_colors)
-	if num_colors < 2 or num_colors > 16:
-		print("Error: Number of Colors '" + str(num_colors) + "' not valid. Must be between 2 and 16.")
-		messagebox.showinfo(error_box_header, "Error: Number of Colors '" + str(num_colors) + "' not valid. Must be between 2 and 16.")
+	if num_colors < min_color_input or num_colors > max_color_input:
+		print("Error: Number of Colors '" + str(num_colors) + "' not valid. Must be between "  + str(min_color_input) + " and " + str(max_color_input))
+		messagebox.showinfo(error_box_header, "Error: Number of Colors '" + str(num_colors) + "' not valid. Must be between "  + str(min_color_input) + " and " + str(max_color_input))
 		return False
 	return True
 

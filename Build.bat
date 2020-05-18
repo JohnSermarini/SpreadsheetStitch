@@ -17,3 +17,4 @@ xcopy dist\SpreadsheetStitch.exe SpreadsheetStitch
 :: Clean remnants of pyinstaller
 rmdir dist /s /q
 rmdir build /s /q
+if exist SpreadsheetStitch.spec del SpreadsheetStitch.spec
