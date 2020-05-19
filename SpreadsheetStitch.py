@@ -11,8 +11,8 @@
 # - Clean imports to shrink .exe file size
 # - Mac build set up
 # - Add image dimensions to GUI
-# - Improve color adjustment algorithm for larger images
-# - Fix thread closing issue
+# - Lock slider when adjusting image stuff in matplotlib
+# - Add help ribbon to toolbar
 # 
 #################################
 
@@ -101,11 +101,11 @@ def main(argv):
 	button_select_file = tk.Button(window, font=font, text="Select File", width=window_width, command=lambda : user_select_file())
 	button_select_file.pack(fill="both", expand=True)
 	## Width
-	tk.Label(window, font=font, width=window_width, text="Width [" + str(min_dimension_input) + " - " + str(max_dimension_input) + "]").pack(fill="both", expand=True)
+	tk.Label(window, font=font, width=window_width, text="Stitch Width [" + str(min_dimension_input) + " - " + str(max_dimension_input) + "]").pack(fill="both", expand=True)
 	entry_width = tk.Entry(window, font=font, width=window_width)
 	entry_width.pack(fill="both", expand=True)
 	## Height
-	tk.Label(window, font=font, width=window_width, text="Height [" + str(min_dimension_input) + " - " + str(max_dimension_input) + "]").pack(fill="both", expand=True)
+	tk.Label(window, font=font, width=window_width, text="Stitch Height [" + str(min_dimension_input) + " - " + str(max_dimension_input) + "]").pack(fill="both", expand=True)
 	entry_height = tk.Entry(window, font=font, width=window_width)
 	entry_height.pack(fill="both", expand=True)
 	## Colors
@@ -427,24 +427,23 @@ def show_preview(use_dmc, width, height, num_colors):
 	slider_vertical_offset = slider_vertical_buffer + slider_height + slider_vertical_buffer
 	ax_slider = fig.add_axes([slider_left_offset, slider_vertical_offset, slider_width, slider_height]) # add_axes([left, bottom, width, height])
 	slider_brightness = pltSlider(ax_slider, 'Brightness', 0, 2.0, valinit=1.0, valstep=0.01, color=color_base)
+	slider_brightness.valtext.set_visible(False)
 	sliders.append(slider_brightness)
 	## Contrast
 	slider_vertical_offset = slider_vertical_offset + slider_height + slider_vertical_buffer
 	ax_contrast = fig.add_axes([slider_left_offset, slider_vertical_offset, slider_width, slider_height]) # add_axes([left, bottom, width, height])
 	slider_contrast = pltSlider(ax_contrast, 'Contrast', 0, 1.0, valinit=0.5, valstep=0.01, color=color_base)
+	slider_contrast.valtext.set_visible(False)
 	sliders.append(slider_contrast)
 	## Saturation
 	slider_vertical_offset = slider_vertical_offset + slider_height + slider_vertical_buffer
 	ax_saturation = fig.add_axes([slider_left_offset, slider_vertical_offset, slider_width, slider_height]) # add_axes([left, bottom, width, height])
 	slider_saturation = pltSlider(ax_saturation, 'Saturation', 0, 1.0, valinit=1.0, valstep=0.01, color=color_base)
+	slider_saturation.valtext.set_visible(False)
 	sliders.append(slider_saturation)
 	## Assign on changed update to sliders
 	def adjust_colors_using_slider_vals(colors, brightness, contrast, saturation):
-		new_colors = deepcopy(colors)
-		new_colors = adjust_brightness(new_colors, brightness)
-		new_colors = adjust_contrast(new_colors, contrast)
-		new_colors = adjust_saturation(new_colors, saturation)
-		return new_colors
+		return adjust_colors(colors, brightness, contrast, saturation)
 	def update(val):
 		# Reset image
 		ax_image.clear()
@@ -467,7 +466,7 @@ def show_preview(use_dmc, width, height, num_colors):
 		## Close the window
 		plt.close()
 		disable_gui_buttons() # Make sure buttons are disabled after they are re-enabled by the matplotlib window closing event
-		## Create the workbook file
+		## Create the workbook file on a new thread
 		new_colors = adjust_colors_using_slider_vals(colors, slider_brightness.val, slider_contrast.val, slider_saturation.val)
 		#create_workbook(new_colors, color_map)
 		workbook_thread = Thread(target=create_workbook, args=[new_colors, color_map])
@@ -482,54 +481,52 @@ def show_preview(use_dmc, width, height, num_colors):
 
 def get_preview_image_from_colors(colors):
 	## Adjust orientation
-	#rotated_colors = np.rot90(colors, k=3, axes=(0,1))
 	rotated_colors = rot90(colors, k=3, axes=(0,1))
-	#rotated_colors = np.fliplr(rotated_colors)
 	rotated_colors = fliplr(rotated_colors)
 	return rotated_colors
 
 
-def adjust_brightness(colors, brightness):
+def adjust_colors(colors, brightness, contrast, saturation):
 	new_colors = []
 	for x in range(0, len(colors)):
 		new_colors.append(deepcopy(colors[x]))
 		for y in range(0, len(colors[x])):
-			r = min(255, int(colors[x][y][0] * brightness))
-			g = min(255, int(colors[x][y][1] * brightness))
-			b = min(255, int(colors[x][y][2] * brightness))
-			new_colors[x][y] = (r, g, b)
+			color = colors[x][y]
+			color = adjust_brightness(color, brightness)
+			color = adjust_contrast(color, contrast)
+			color = adjust_saturation(color, saturation)
+			new_colors[x][y] = color
 	return new_colors
+
+
+def adjust_brightness(color, brightness):
+	#print(color)
+	#print(type(color))
+	r = min(255, int(float(color[0]) * brightness))
+	g = min(255, int(float(color[1]) * brightness))
+	b = min(255, int(float(color[2]) * brightness))
+	return (r, g, b)
 
 
 # Tutorial: https://www.dfstudios.co.uk/articles/programming/image-programming-algorithms/image-processing-algorithms-part-5-contrast-adjustment/
-def adjust_contrast(colors, contrast):
-	new_colors = []
+def adjust_contrast(color, contrast):
 	contrast = int(-128.0 + (256.0 * contrast)) # 0 = -128, 0.5 = 0, 1.0 = +128
 	f = (259 * (contrast + 255)) / (255 * (259 - contrast))
-	for x in range(0, len(colors)):
-		new_colors.append(deepcopy(colors[x]))
-		for y in range(0, len(colors[x])):
-			r = max(0, min(255, f * (int(colors[x][y][0]) - 128) + 128))
-			g = max(0, min(255, f * (int(colors[x][y][1]) - 128) + 128))
-			b = max(0, min(255, f * (int(colors[x][y][2]) - 128) + 128))
-			new_colors[x][y] = (r, g, b)
-	return new_colors
+	r = max(0, min(255, f * (int(color[0]) - 128) + 128))
+	g = max(0, min(255, f * (int(color[1]) - 128) + 128))
+	b = max(0, min(255, f * (int(color[2]) - 128) + 128))
+	return (r, g, b)
 
 
-def adjust_saturation(colors, saturation):
+def adjust_saturation(color, saturation):
 	## Convert to HSV, adjust S, convert back
-	new_colors = []
-	for x in range(0, len(colors)):
-		new_colors.append(deepcopy(colors[x]))
-		for y in range(0, len(colors[x])):
-			## Convert RGB to HSV
-			hsv = list(rgb_to_hsv(colors[x][y][0], colors[x][y][1], colors[x][y][2]))
-			## Adjust saturation in HSV
-			hsv[1] = hsv[1] * saturation
-			## Convert adjusted HSV back to RGB
-			rgb = hsv_to_rgb(hsv[0], hsv[1], hsv[2])
-			new_colors[x][y] = (int(rgb[0]), int(rgb[1]), int(rgb[2]))
-	return new_colors
+	## Convert RGB to HSV
+	hsv = list(rgb_to_hsv(color[0], color[1], color[2]))
+	## Adjust saturation in HSV
+	hsv[1] = hsv[1] * saturation
+	## Convert adjusted HSV back to RGB
+	rgb = hsv_to_rgb(hsv[0], hsv[1], hsv[2])
+	return (int(rgb[0]), int(rgb[1]), int(rgb[2]))
 
 
 def create_workbook(colors, color_map):
