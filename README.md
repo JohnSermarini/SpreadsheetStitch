@@ -2,11 +2,11 @@
  
  **Spreadsheet Stitch** is an application to convert images to accessible cross stich patterns. Simple launch the application, select your image file, choose your pattern height, width, number of colors, make some minor color adjustments (if you want), and your pattern will be created in a flash!
  
-![Logo](graphics/logo.ico)
+
  
 Select a File | Tweak Colors | Final Output
 :-:|:-:|:-:
-![Step1](graphics/1.png)  |  ![Step2](graphics/2.png) |  ![Step3](graphics/3.png)
+![Step1](graphics/1.PNG)  |  ![Step2](graphics/2.PNG) |  ![Step3](graphics/3.PNG)
  
   
  ## How To Use
@@ -53,3 +53,5 @@ Included in this repo is a Build.bat, which uses PyInstaller to create the new a
 ###### Spreadsheet Stitch is licensed under the [MIT License](LICENSE) License.
 
 Special thanks to [openpyxl](https://openpyxl.readthedocs.io/en/stable/) and [Tkinter](https://docs.python.org/3/library/tkinter.html)
+
+![Logo](graphics/logo.ico)
