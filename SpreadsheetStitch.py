@@ -1,29 +1,7 @@
-
 #################################
 #      Spreadsheet Stitch       
-#        John Sermarini         
-#            v0.9               
-#################################
-
-########## To Do List ###########
-#
-# - Create Readme
-# - Clean imports to shrink .exe file size
-# - Mac build set up
-# - Add image dimensions to GUI
-# - Lock slider when adjusting image stuff in matplotlib
-# - Add help ribbon to toolbar
-# 
-#################################
-
-########## Wish List ############
-#
-# - Choose output folder/file name
-# - Reimplement DMC Colors
-# - Mac port
-# - Custom symbols
-# - Trim white space option
-#
+#     Pleasant Hill Studio         
+#            v1.0             
 #################################
 
 
