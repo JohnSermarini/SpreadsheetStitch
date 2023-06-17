@@ -23,8 +23,9 @@ if exist SpreadsheetStitch.spec del SpreadsheetStitch.spec
 :: Create readme file
 ::echo For help and information, please see: > %readmeName%
 ::echo https://github.com/JohnSermarini/SpreadsheetStitch >> %readmeName%
-copy README.md SpreadsheetStitch :: Copy readme
-ren SpreadsheetStitch\README.md README.txt :: Change it to a .txt to improve accessability
+xcopy README.md SpreadsheetStitch
+:: copy README.md SpreadsheetStitch :: Copy readme
+:: ren SpreadsheetStitch\README.md README.txt :: Change it to a .txt to improve accessability
 
 :: Add license
-:: TODO
+copy LICENSE SpreadsheetStitch

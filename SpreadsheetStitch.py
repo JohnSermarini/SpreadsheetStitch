@@ -1,11 +1,35 @@
+"""
+
+MIT License
+
+Copyright (c) 2023 John Sermarini
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+"""
+
 #################################
-#      Spreadsheet Stitch       
-#     Pleasant Hill Studio         
+#      Spreadsheet Stitch              
 #            v1.0             
 #################################
 
 
-#import sys
 from sys import argv as argv
 from os import path, mkdir
 from PIL import Image
@@ -15,13 +39,11 @@ from openpyxl import load_workbook
 from string import ascii_uppercase
 from numpy import rot90, fliplr
 from numpy.linalg import norm
-#import numpy as np
 import tkinter as tk
 import tkinter.font as tkFont
 from tkinter import filedialog
 from tkinter import messagebox
 from tkinter.ttk import Progressbar
-#import matplotlib as mpl
 from matplotlib import pyplot as plt
 from matplotlib import rcParams
 from matplotlib.widgets import Slider as pltSlider

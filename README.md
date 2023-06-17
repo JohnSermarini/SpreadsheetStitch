@@ -27,7 +27,7 @@ The resulting file will have the same name as the original image file. This file
 
 Source code available on [GitHub](https://github.com/JohnSermarini/SpreadsheetStitch).
 
-This project was built using *Python 3.10.11*. Use *pip* and the *requirements.txt* to install the necessary packages. The front-end interfaces are built primarly using [*Tkinter*](https://docs.python.org/3/library/tkinter.html), and currently all code operates within the *SpreadsheetStitch.py* file.
+This project was built using *Python 3.10.11*. Use *pip* and the *requirements.txt* to install the necessary packages. The front-end interfaces are built primarly using [*Tkinter*](https://docs.python.org/3/library/tkinter.html) and currently all code operates within the *SpreadsheetStitch.py* file.
 
 ```
 python SpreadsheetStitch.py 
@@ -50,6 +50,6 @@ Included in this repo is a Build.bat, which uses PyInstaller to create the new a
 
 ## Licenses and Thanks
 
-###### Spreadsheet Stitch is licensed under the XYZ License.
+###### Spreadsheet Stitch is licensed under the [MIT License](LICENSE) License.
 
-Special thanks to [openpyxl](https://openpyxl.readthedocs.io/en/stable/) and Tkinter
+Special thanks to [openpyxl](https://openpyxl.readthedocs.io/en/stable/) and [Tkinter](https://docs.python.org/3/library/tkinter.html)
