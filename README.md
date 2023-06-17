@@ -1,14 +1,12 @@
-# Spreadsheet Stitch
- 
- **Spreadsheet Stitch** is an application to convert images to accessible cross stich patterns. Simple launch the application, select your image file, choose your pattern height, width, number of colors, make some minor color adjustments (if you want), and your pattern will be created in a flash!
- 
+# Spreadsheet Stitch - v1.0
 
- 
+ **Spreadsheet Stitch** is an application to convert images to accessible cross stich patterns. Simple launch the application, select your image file, choose your pattern height, width, number of colors, make some minor color adjustments (if you want), and your pattern will be created in a flash!
+
 Select a File | Tweak Colors | Final Output
 :-:|:-:|:-:
 ![Step1](graphics/1.PNG)  |  ![Step2](graphics/2.PNG) |  ![Step3](graphics/3.PNG)
- 
-  
+
+
  ## How To Use
 
 No installation required. You can move the *SpreadsheetStitch* folder wherever you would like, but keep its organization intact to ensure the application runs correctly. To use:
@@ -33,7 +31,7 @@ This project was built using *Python 3.10.11*. Use *pip* and the *requirements.t
 python SpreadsheetStitch.py 
 ```
 
-Included in this repo is a Build.bat, which uses PyInstaller to create the new application folder **SpreadsheetStitch** and then quickly cleans up all the mess it makes in the process. Inside this new folder is everything needed to run the application stand-alone, and it should auto-add *ReadMe* and license files as well. 
+Included in this repo is a Build.bat, which uses PyInstaller to create/update the application folder **SpreadsheetStitch** and then quickly cleans up all the mess it makes in the process. Inside this new folder is everything needed to run the application stand-alone, and it should auto-add *ReadMe* and license files as well. A pre-built version is included in this repo.
 
 #### TODO
 
@@ -43,7 +41,7 @@ Included in this repo is a Build.bat, which uses PyInstaller to create the new a
 - Add help/info ribbon to toolbar
 - Re-sizeable window
 - Choose input/output folders
-- Full [DMC color support](https://lordlibidan.com/dmc-color-chart/)
+- Full [DMC color support](https://lordlibidan.com/dmc-color-chart/). Support is partially complete, but code is disabled.
 - Custom symbols in Excel
 - Add image dimensions to GUI
 - More comments
