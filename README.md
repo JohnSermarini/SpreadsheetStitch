@@ -48,7 +48,7 @@ Included in this repo is a Build.bat, which uses PyInstaller to create/update th
 
 ## Licenses and Thanks
 
-###### Spreadsheet Stitch is licensed under the [MIT License](LICENSE) License.
+###### Spreadsheet Stitch is licensed under the [MIT License](LICENSE).
 
 Special thanks to [openpyxl](https://openpyxl.readthedocs.io/en/stable/) for saving me a lot of time and to [Court Rogers](https://www.instagram.com/courtrogers.art/) for some amazing logo work!
 
